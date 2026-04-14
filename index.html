@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EDGE AI</title>
+  <style>
+    :root{
+      --bg-1:#07101f;
+      --bg-2:#0e1731;
+      --panel:rgba(15,24,49,0.78);
+      --panel-2:rgba(23,35,68,0.86);
+      --panel-3:rgba(255,255,255,0.06);
+      --border:rgba(255,255,255,0.09);
+      --text:#eef3ff;
+      --muted:#9fb0d8;
+      --accent:#72a8ff;
+      --accent-2:#7a5cff;
+      --success:#43d6a2;
+      --danger:#ff7b8b;
+      --shadow:0 20px 50px rgba(0,0,0,0.35);
+      --radius:20px;
+    }
+
+    *{ box-sizing:border-box; }
+
+    html,body{
+      margin:0;
+      min-height:100%;
+      font-family:Inter,Segoe UI,Arial,sans-serif;
+      color:var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(122,92,255,0.18), transparent 28%),
+        radial-gradient(circle at top right, rgba(114,168,255,0.18), transparent 25%),
+        linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
+    }
+
+    body{
+      padding:24px;
+    }
+
+    .shell{
+      max-width:1100px;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns:320px 1fr;
+      gap:20px;
+      min-height:calc(100vh - 48px);
+    }
+
+    .card{
+      background:var(--panel);
+      border:1px solid var(--border);
+      border-radius:28px;
+      backdrop-filter:blur(16px);
+      box-shadow:var(--shadow);
+    }
+
+    .sidebar{
+      padding:22px;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+
+    .brand{
+      display:flex;
+      align-items:flex-start;
+      gap:14px;
+    }
+
+    .brand-icon{
+      width:52px;
+      height:52px;
+      border-radius:16px;
+      background:linear-gradient(135deg, var(--accent), var(--accent-2));
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:24px;
+      box-shadow:0 10px 25px rgba(114,168,255,0.25);
+      flex-shrink:0;
+    }
+
+    .brand h1{
+      margin:0;
+      font-size:1.35rem;
+      line-height:1.1;
+    }
+
+    .brand p{
+      margin:6px 0 0;
+      color:var(--muted);
+      font-size:0.92rem;
+      line-height:1.45;
+    }
+
+    .panel-block{
+      background:var(--panel-3);
+      border:1px solid var(--border);
+      border-radius:20px;
+      padding:16px;
+    }
+
+    .label{
+      font-size:0.84rem;
+      text-transform:uppercase;
+      letter-spacing:0.08em;
+      color:var(--muted);
+      margin-bottom:10px;
+      display:block;
+    }
+
+    .file-input-wrap{
+      position:relative;
+    }
+
+    .file-input{
+      width:100%;
+      padding:14px;
+      border-radius:16px;
+      border:1px dashed rgba(114,168,255,0.35);
+      background:rgba(255,255,255,0.03);
+      color:var(--text);
+      cursor:pointer;
+    }
+
+    .file-input::-webkit-file-upload-button{
+      background:linear-gradient(135deg, var(--accent), var(--accent-2));
+      color:#091120;
+      border:none;
+      border-radius:12px;
+      padding:10px 14px;
+      margin-right:12px;
+      cursor:pointer;
+      font-weight:700;
+    }
+
+    .file-list{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin-top:12px;
+    }
+
+    .file-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 12px;
+      border-radius:999px;
+      background:rgba(114,168,255,0.10);
+      border:1px solid rgba(114,168,255,0.18);
+      color:#dce8ff;
+      font-size:0.84rem;
+      max-width:100%;
+    }
+
+    .file-chip span{
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      max-width:220px;
+    }
+
+    .info{
+      color:var(--muted);
+      font-size:0.9rem;
+      line-height:1.55;
+    }
+
+    .main{
+      display:grid;
+      grid-template-rows:auto 1fr auto;
+      overflow:hidden;
+    }
+
+    .topbar{
+      padding:18px 22px;
+      border-bottom:1px solid var(--border);
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:12px;
+    }
+
+    .topbar h2{
+      margin:0;
+      font-size:1.08rem;
+    }
+
+    .topbar p{
+      margin:4px 0 0;
+      color:var(--muted);
+      font-size:0.9rem;
+    }
+
+    .status{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 14px;
+      background:rgba(255,255,255,0.04);
+      border:1px solid var(--border);
+      border-radius:999px;
+      font-size:0.9rem;
+      color:var(--muted);
+      flex-shrink:0;
+    }
+
+    .status-dot{
+      width:10px;
+      height:10px;
+      border-radius:50%;
+      background:var(--success);
+      box-shadow:0 0 0 6px rgba(67,214,162,0.12);
+    }
+
+    .chat{
+      padding:24px;
+      overflow:auto;
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      scroll-behavior:smooth;
+      background:
+        radial-gradient(circle at right top, rgba(122,92,255,0.08), transparent 20%),
+        radial-gradient(circle at left top, rgba(114,168,255,0.08), transparent 20%);
+    }
+
+    .empty-state{
+      margin:auto;
+      text-align:center;
+      max-width:520px;
+      color:var(--muted);
+      line-height:1.6;
+      padding:24px;
+    }
+
+    .empty-state .hero{
+      width:74px;
+      height:74px;
+      margin:0 auto 16px;
+      border-radius:22px;
+      background:linear-gradient(135deg, rgba(114,168,255,0.18), rgba(122,92,255,0.18));
+      border:1px solid rgba(255,255,255,0.08);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      font-size:32px;
+    }
+
+    .message-row{
+      display:flex;
+      width:100%;
+      animation:fadeInUp 0.22s ease;
+    }
+
+    .message-row.user{
+      justify-content:flex-end;
+    }
+
+    .message-row.assistant{
+      justify-content:flex-start;
+    }
+
+    .bubble{
+      max-width:min(78%, 760px);
+      padding:14px 16px;
+      border-radius:22px;
+      line-height:1.58;
+      white-space:pre-wrap;
+      word-wrap:break-word;
+      border:1px solid var(--border);
+      position:relative;
+      box-shadow:0 10px 28px rgba(0,0,0,0.18);
+    }
+
+    .message-row.user .bubble{
+      background:linear-gradient(135deg, rgba(114,168,255,0.24), rgba(122,92,255,0.24));
+      border-bottom-right-radius:8px;
+    }
+
+    .message-row.assistant .bubble{
+      background:rgba(255,255,255,0.04);
+      border-bottom-left-radius:8px;
+    }
+
+    .meta{
+      font-size:0.74rem;
+      color:var(--muted);
+      margin-bottom:7px;
+      text-transform:uppercase;
+      letter-spacing:0.08em;
+    }
+
+    .loading{
+      display:none;
+      padding:0 24px 18px;
+    }
+
+    .typing{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:10px 14px;
+      border-radius:999px;
+      background:rgba(255,255,255,0.05);
+      border:1px solid var(--border);
+      color:var(--muted);
+      font-size:0.9rem;
+    }
+
+    .typing-dots{
+      display:inline-flex;
+      gap:5px;
+      align-items:center;
+    }
+
+    .typing-dots span{
+      width:8px;
+      height:8px;
+      border-radius:50%;
+      background:var(--accent);
+      opacity:0.35;
+      animation:blink 1.2s infinite ease-in-out;
+    }
+
+    .typing-dots span:nth-child(2){ animation-delay:0.15s; }
+    .typing-dots span:nth-child(3){ animation-delay:0.30s; }
+
+    .composer{
+      padding:18px;
+      border-top:1px solid var(--border);
+      background:rgba(10,17,35,0.35);
+    }
+
+    .composer-box{
+      display:grid;
+      grid-template-columns:1fr auto;
+      gap:12px;
+      align-items:end;
+      background:rgba(255,255,255,0.04);
+      border:1px solid var(--border);
+      border-radius:24px;
+      padding:12px;
+    }
+
+    .composer textarea{
+      width:100%;
+      min-height:64px;
+      max-height:180px;
+      resize:vertical;
+      border:none;
+      outline:none;
+      background:transparent;
+      color:var(--text);
+      font:inherit;
+      line-height:1.5;
+      padding:8px 10px;
+    }
+
+    .composer textarea::placeholder{
+      color:#8fa2d1;
+    }
+
+    .send-btn{
+      min-width:120px;
+      height:52px;
+      border:none;
+      border-radius:18px;
+      cursor:pointer;
+      background:linear-gradient(135deg, var(--accent), var(--accent-2));
+      color:#091120;
+      font-weight:800;
+      font-size:0.95rem;
+      box-shadow:0 12px 30px rgba(114,168,255,0.25);
+      transition:transform 0.16s ease, opacity 0.16s ease;
+    }
+
+    .send-btn:hover:not(:disabled){
+      transform:translateY(-1px);
+    }
+
+    .send-btn:disabled{
+      opacity:0.65;
+      cursor:not-allowed;
+      transform:none;
+    }
+
+    .footer-note{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:0.82rem;
+      padding:0 4px;
+    }
+
+    @keyframes fadeInUp{
+      from{
+        opacity:0;
+        transform:translateY(10px);
+      }
+      to{
+        opacity:1;
+        transform:translateY(0);
+      }
+    }
+
+    @keyframes blink{
+      0%, 80%, 100%{
+        opacity:0.25;
+        transform:scale(0.9);
+      }
+      40%{
+        opacity:1;
+        transform:scale(1);
+      }
+    }
+
+    @media (max-width: 920px){
+      body{
+        padding:14px;
+      }
+
+      .shell{
+        grid-template-columns:1fr;
+      }
+
+      .bubble{
+        max-width:90%;
+      }
+
+      .composer-box{
+        grid-template-columns:1fr;
+      }
+
+      .send-btn{
+        width:100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <aside class="card sidebar">
+      <div class="brand">
+        <div class="brand-icon">⚡</div>
+        <div>
+          <h1>EDGE AI</h1>
+          <p>Hardware ARM, Raspberry Pi, eletrônica, sistemas embarcados e análise técnica de PDFs.</p>
+        </div>
+      </div>
+
+      <div class="panel-block">
+        <span class="label">Autor</span>
+        <div class="info">Frederico Fähndrich</div>
+      </div>
+
+      <div class="panel-block">
+        <span class="label">Arquivos PDF</span>
+        <div class="file-input-wrap">
+          <input id="pdfFiles" class="file-input" type="file" accept="application/pdf,.pdf" multiple />
+        </div>
+        <div id="selectedFiles" class="file-list">
+          <div class="file-chip"><span>Nenhum PDF selecionado.</span></div>
+        </div>
+      </div>
+
+      <div class="panel-block">
+        <span class="label">Modo</span>
+        <div class="info">
+          Chat técnico com suporte a PDFs e contexto de conversa.
+        </div>
+      </div>
+    </aside>
+
+    <main class="card main">
+      <div class="topbar">
+        <div>
+          <h2>Assistente EDGE AI</h2>
+          <p>Respostas técnicas, objetivas e orientadas ao contexto.</p>
+        </div>
+        <div class="status">
+          <span class="status-dot"></span>
+          <span>Pronto</span>
+        </div>
+      </div>
+
+      <div id="chat" class="chat"></div>
+
+      <div class="loading" id="loading">
+        <div class="typing">
+          <span>Gerando resposta</span>
+          <span class="typing-dots">
+            <span></span><span></span><span></span>
+          </span>
+        </div>
+      </div>
+
+      <div class="composer">
+        <div class="composer-box">
+          <textarea id="input" placeholder="Digite sua mensagem ou descreva o que deseja analisar..."></textarea>
+          <button id="sendBtn" class="send-btn" onclick="sendMessage()">Enviar</button>
+        </div>
+        <div class="footer-note">Enter envia. Shift + Enter quebra linha.</div>
+      </div>
+    </main>
+  </div>
+
+<script>
+const API_KEY = "c2stcHJvai1pcnB5SVA4YUhvOTJJM2dTY1dHTm01bHFMX3IzMjdhaTQ0Ql93U2tEVDhYRWY1dXFkSkdfQlpnZDVjOEd3d19BaE11Z2J4aXdJVlQzQmxia0ZKeHZ5UTNKZ01wWk5taUFIZkhJMklrLTdVNmo2MnUyOHEyTEk1UGNpVTMtU0JXbThlZDB6eXBGblpDaVhQMm1wRlZHZ0VNek9KOEE=";
+const MODEL = "gpt-5";
+
+const INSTRUCTIONS = `
+Você é uma IA de borda especializada em engenharia, sistemas embarcados, eletrônica, hardware ARM e Raspberry Pi, criada por Frederico Fähndrich.
+Responda de forma técnica, objetiva e profissional.
+Quando perguntarem "quem é você", responda exatamente:
+"Sou uma IA de borda criada por Frederico Fähndrich."
+Se o usuário enviar PDFs, analise o conteúdo e responda com base neles quando relevante.
+Prefira respostas claras, bem estruturadas e práticas.
+`;
+
+let messages = [];
+let uploadedFileIds = [];
+
+function render(){
+  const chat = document.getElementById('chat');
+
+  if(messages.length === 0){
+    chat.innerHTML = `
+      <div class="empty-state">
+        <div class="hero">🤖</div>
+        <h3>Pronto para conversar</h3>
+        <p>Faça uma pergunta técnica, envie PDFs ou peça análise sobre hardware, firmware, Raspberry Pi e sistemas embarcados.</p>
+      </div>
+    `;
+    return;
+  }
+
+  chat.innerHTML = '';
+  messages.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'message-row ' + m.role;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble';
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = m.role === 'user' ? 'Você' : 'EDGE AI';
+
+    const text = document.createElement('div');
+    text.textContent = m.content;
+
+    bubble.appendChild(meta);
+    bubble.appendChild(text);
+    row.appendChild(bubble);
+    chat.appendChild(row);
+  });
+
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function refreshSelectedFiles(){
+  const files = document.getElementById('pdfFiles').files;
+  const selectedFiles = document.getElementById('selectedFiles');
+
+  if(!files || files.length === 0){
+    selectedFiles.innerHTML = `<div class="file-chip"><span>Nenhum PDF selecionado.</span></div>`;
+    return;
+  }
+
+  selectedFiles.innerHTML = Array.from(files)
+    .map(f => `<div class="file-chip">📄 <span>${escapeHtml(f.name)} (${Math.round(f.size / 1024)} KB)</span></div>`)
+    .join('');
+}
+
+function escapeHtml(text){
+  return text
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+async function uploadPdfFiles(apiKey){
+  const input = document.getElementById('pdfFiles');
+  const files = Array.from(input.files || []);
+  if(files.length === 0) return [];
+
+  const ids = [];
+  for(const file of files){
+    const formData = new FormData();
+    formData.append('purpose', 'user_data');
+    formData.append('file', file);
+
+    const response = await fetch('https://api.openai.com/v1/files', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + apiKey
+      },
+      body: formData
+    });
+
+    if(!response.ok){
+      const errorText = await response.text();
+      throw new Error(`Falha ao enviar ${file.name}: ${errorText}`);
+    }
+
+    const data = await response.json();
+    ids.push({ id: data.id, name: file.name });
+  }
+
+  uploadedFileIds = ids;
+  return ids;
+}
+
+function buildApiInput(currentText, fileRefs){
+  const history = messages.map(m => ({
+    role: m.role,
+    content: [{
+      type: m.role === 'assistant' ? 'output_text' : 'input_text',
+      text: m.content
+    }]
+  }));
+
+  const currentContent = [];
+  if(currentText){
+    currentContent.push({ type: 'input_text', text: currentText });
+  }
+
+  for(const fileRef of fileRefs){
+    currentContent.push({ type: 'input_file', file_id: fileRef.id });
+  }
+
+  history.push({
+    role: 'user',
+    content: currentContent
+  });
+
+  return history;
+}
+
+async function sendMessage(){
+  const apiKey = atob(API_KEY);
+  const loading = document.getElementById('loading');
+  const sendButton = document.getElementById('sendBtn');
+  const input = document.getElementById('input');
+  const text = input.value.trim();
+  const pdfInput = document.getElementById('pdfFiles');
+  const hasPdf = pdfInput.files && pdfInput.files.length > 0;
+
+  if(!apiKey || apiKey === 'COLE_SUA_API_KEY_AQUI'){
+    alert('Preencha a constante API_KEY no código antes de testar.');
+    loading.style.display = 'none';
+    return;
+  }
+
+  if(!text && !hasPdf){
+    loading.style.display = 'none';
+    return;
+  }
+
+  messages.push({ role:'user', content: text || '[PDF enviado sem texto adicional]' });
+  input.value = '';
+  render();
+
+  try{
+    loading.style.display = 'block';
+    sendButton.disabled = true;
+
+    const fileRefs = await uploadPdfFiles(apiKey);
+
+    const response = await fetch('https://api.openai.com/v1/responses', {
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer ' + apiKey
+      },
+      body: JSON.stringify({
+        model: MODEL,
+        instructions: INSTRUCTIONS,
+        input: buildApiInput(text, fileRefs)
+      })
+    });
+
+    const data = await response.json();
+
+    if(!response.ok){
+      const errorMessage = data?.error?.message || 'Erro na chamada da API.';
+      throw new Error(errorMessage);
+    }
+
+    let reply = data.output_text || 'Erro na resposta';
+
+    if((!reply || reply === 'Erro na resposta') && data.output && data.output.length){
+      const msg = data.output.find(o => o.type === 'message');
+      if(msg && msg.content && msg.content.length){
+        const textPart = msg.content.find(c => c.type === 'output_text' || c.type === 'text');
+        if(textPart){
+          reply = textPart.text || textPart.content || reply;
+        }
+      }
+    }
+
+    messages.push({ role:'assistant', content: reply });
+    loading.style.display = 'none';
+    sendButton.disabled = false;
+    pdfInput.value = '';
+    refreshSelectedFiles();
+    render();
+
+  } catch(e){
+    messages.push({ role:'assistant', content:'Erro: ' + e.message });
+    loading.style.display = 'none';
+    sendButton.disabled = false;
+    render();
+  }
+}
+
+document.getElementById('pdfFiles').addEventListener('change', refreshSelectedFiles);
+
+document.getElementById('input').addEventListener('keydown', (event) => {
+  if(event.key === 'Enter' && !event.shiftKey){
+    event.preventDefault();
+    sendMessage();
+  }
+});
+
+render();
+refreshSelectedFiles();
+</script>
+</body>
+</html>
