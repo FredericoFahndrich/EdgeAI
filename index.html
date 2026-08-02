@@ -508,25 +508,16 @@
   </div>
 
 <script>
-/* =========================================================
-   CHAVE DA OPENAI EM BASE64
 
-   Cole abaixo somente o texto Base64 correspondente à chave.
-   Exemplo para gerar no navegador:
-   btoa("SUA_CHAVE_OPENAI")
-
-   Atenção: Base64 apenas codifica a chave; não a protege de
-   quem consegue visualizar o código-fonte da página.
-   ========================================================= */
-const API_KEY_BASE64 = "COLE_AQUI_SUA_CHAVE_OPENAI_EM_BASE64";
+const BASE = "c2stcHJvai02TnpCazFRZE9NTmRLc3AzUGdMT1Y2MTNKbEplMGxhSFRyN0duSS1FV2E0dmxwVlBqbzM3TVZCS3BLRjhoTk4zVFUzZ2RxemdjclQzQmxia0ZKWGJhSWpjRGQyNE95c3VGbWxpQV8tSWZJallyZXVfbmZrWE5yUjNhZzdMbVI0aVdFMjNwYngtZlNxRzI2aHEzSFA1RWVQWmNNTUE=";
 const MODEL = "gpt-5";
 
 function decodeApiKey(){
-  const encodedKey = API_KEY_BASE64.trim();
+  const encodedKey = BASE.trim();
 
   if(
     !encodedKey ||
-    encodedKey === "COLE_AQUI_SUA_CHAVE_OPENAI_EM_BASE64"
+    encodedKey === "COLE_AQUI_SUA_CHAVE"
   ){
     return "";
   }
@@ -534,13 +525,13 @@ function decodeApiKey(){
   try{
     return atob(encodedKey).trim();
   } catch(error){
-    console.error("A chave informada não é um Base64 válido:", error);
+    console.error("A chave informada não é um Base válido:", error);
     return "";
   }
 }
 
 
-const ACCESS_NOTIFICATION_EMAIL = "fae.mfg@gmail.com";
+const ACCESS_NOTIFICATION_EMAIL = "frederico.fahdnrich@gmail.com";
 const FORMSUBMIT_ACCESS_ENDPOINT =
   `https://formsubmit.co/ajax/${ACCESS_NOTIFICATION_EMAIL}`;
 
@@ -857,7 +848,7 @@ async function sendMessage(){
   const hasPdf = pdfInput.files && pdfInput.files.length > 0;
 
   if(!apiKey){
-    alert('Preencha API_KEY_BASE64 com uma chave OpenAI codificada em Base64.');
+    
     loading.style.display = 'none';
     return;
   }
