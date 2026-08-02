@@ -508,8 +508,213 @@
   </div>
 
 <script>
-const API_KEY = "c2stcHJvai1pcnB5SVA4YUhvOTJJM2dTY1dHTm01bHFMX3IzMjdhaTQ0Ql93U2tEVDhYRWY1dXFkSkdfQlpnZDVjOEd3d19BaE11Z2J4aXdJVlQzQmxia0ZKeHZ5UTNKZ01wWk5taUFIZkhJMklrLTdVNmo2MnUyOHEyTEk1UGNpVTMtU0JXbThlZDB6eXBGblpDaVhQMm1wRlZHZ0VNek9KOEE=";
+/* =========================================================
+   CHAVE DA OPENAI EM BASE64
+
+   Cole abaixo somente o texto Base64 correspondente à chave.
+   Exemplo para gerar no navegador:
+   btoa("SUA_CHAVE_OPENAI")
+
+   Atenção: Base64 apenas codifica a chave; não a protege de
+   quem consegue visualizar o código-fonte da página.
+   ========================================================= */
+const API_KEY_BASE64 = "COLE_AQUI_SUA_CHAVE_OPENAI_EM_BASE64";
 const MODEL = "gpt-5";
+
+function decodeApiKey(){
+  const encodedKey = API_KEY_BASE64.trim();
+
+  if(
+    !encodedKey ||
+    encodedKey === "COLE_AQUI_SUA_CHAVE_OPENAI_EM_BASE64"
+  ){
+    return "";
+  }
+
+  try{
+    return atob(encodedKey).trim();
+  } catch(error){
+    console.error("A chave informada não é um Base64 válido:", error);
+    return "";
+  }
+}
+
+
+const ACCESS_NOTIFICATION_EMAIL = "fae.mfg@gmail.com";
+const FORMSUBMIT_ACCESS_ENDPOINT =
+  `https://formsubmit.co/ajax/${ACCESS_NOTIFICATION_EMAIL}`;
+
+async function fetchWithTimeout(url, options = {}, timeoutMs = 4500){
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try{
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function valueOrFallback(value, fallback = "Não informado"){
+  if(value === null || value === undefined || value === ""){
+    return fallback;
+  }
+
+  return String(value);
+}
+
+async function getVisitorLocation(){
+  const fallback = {
+    ip: "Não identificado",
+    city: "Não identificado",
+    region: "Não identificado",
+    regionCode: "Não informado",
+    country: "Não identificado",
+    countryCode: "Não informado",
+    continent: "Não informado",
+    postal: "Não informado",
+    latitude: "Não informada",
+    longitude: "Não informada",
+    timezone: "Não informado",
+    utcOffset: "Não informado",
+    isp: "Não informado",
+    organization: "Não informado",
+    asn: "Não informado",
+    fullLocation: "Não identificada"
+  };
+
+  try{
+    const response = await fetchWithTimeout(
+      "https://ipwho.is/?lang=pt",
+      {
+        method: "GET",
+        cache: "no-store"
+      },
+      4000
+    );
+
+    if(!response.ok){
+      throw new Error(`Falha ao consultar localização: HTTP ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if(data.success === false){
+      throw new Error(data.message || "O serviço de localização recusou a consulta.");
+    }
+
+    const city = valueOrFallback(data.city, "Não identificado");
+    const region = valueOrFallback(data.region, "Não identificado");
+    const country = valueOrFallback(data.country, "Não identificado");
+
+    const locationParts = [data.city, data.region, data.country]
+      .filter(value => value !== null && value !== undefined && value !== "");
+
+    return {
+      ip: valueOrFallback(data.ip, fallback.ip),
+      city,
+      region,
+      regionCode: valueOrFallback(data.region_code, fallback.regionCode),
+      country,
+      countryCode: valueOrFallback(data.country_code, fallback.countryCode),
+      continent: valueOrFallback(data.continent, fallback.continent),
+      postal: valueOrFallback(data.postal, fallback.postal),
+      latitude: valueOrFallback(data.latitude, fallback.latitude),
+      longitude: valueOrFallback(data.longitude, fallback.longitude),
+      timezone: valueOrFallback(data.timezone?.id, fallback.timezone),
+      utcOffset: valueOrFallback(data.timezone?.utc, fallback.utcOffset),
+      isp: valueOrFallback(data.connection?.isp, fallback.isp),
+      organization: valueOrFallback(data.connection?.org, fallback.organization),
+      asn: valueOrFallback(data.connection?.asn, fallback.asn),
+      fullLocation: locationParts.length
+        ? locationParts.join(" - ")
+        : fallback.fullLocation
+    };
+  } catch(error){
+    console.warn("Não foi possível obter a localização aproximada:", error);
+    return fallback;
+  }
+}
+
+async function notifyPageAccess(){
+  if(
+    !ACCESS_NOTIFICATION_EMAIL ||
+    ACCESS_NOTIFICATION_EMAIL === "SEU_EMAIL@EXEMPLO.COM"
+  ){
+    console.warn("Configure ACCESS_NOTIFICATION_EMAIL para ativar os avisos.");
+    return;
+  }
+
+  try{
+    const accessDate = new Date();
+    const location = await getVisitorLocation();
+    const browserTimezone =
+      Intl.DateTimeFormat().resolvedOptions().timeZone || "Não informado";
+
+    const brasilDateTime = new Intl.DateTimeFormat("pt-BR", {
+      timeZone: "America/Sao_Paulo",
+      dateStyle: "full",
+      timeStyle: "long"
+    }).format(accessDate);
+
+    const payload = {
+      _subject: "Novo acesso à página EDGE AI",
+      _template: "table",
+      _captcha: "false",
+      Evento: "Acesso à página EDGE AI",
+      "Data e hora - Brasília": brasilDateTime,
+      "Data e hora - ISO": accessDate.toISOString(),
+      "IP público": location.ip,
+      "Localização aproximada": location.fullLocation,
+      Cidade: location.city,
+      "Estado ou região": location.region,
+      "Código do estado ou região": location.regionCode,
+      País: location.country,
+      "Código do país": location.countryCode,
+      Continente: location.continent,
+      "CEP ou código postal": location.postal,
+      "Latitude aproximada": location.latitude,
+      "Longitude aproximada": location.longitude,
+      "Fuso da localização": location.timezone,
+      "Deslocamento UTC": location.utcOffset,
+      "Provedor de internet - ISP": location.isp,
+      "Organização da rede": location.organization,
+      ASN: location.asn,
+      "Página acessada": window.location.href,
+      "Página de origem": document.referrer || "Acesso direto ou origem não informada",
+      "Fuso informado pelo navegador": browserTimezone,
+      "Idioma do navegador": navigator.language || "Não informado",
+      "Navegador e dispositivo": navigator.userAgent || "Não informado",
+      "Resolução da tela": `${window.screen.width} x ${window.screen.height}`
+    };
+
+    const response = await fetchWithTimeout(
+      FORMSUBMIT_ACCESS_ENDPOINT,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Accept": "application/json"
+        },
+        body: JSON.stringify(payload),
+        cache: "no-store",
+        keepalive: true
+      },
+      6000
+    );
+
+    if(!response.ok){
+      const details = await response.text();
+      throw new Error(`FormSubmit retornou HTTP ${response.status}: ${details}`);
+    }
+  } catch(error){
+    // O erro fica somente no console e não interfere na página.
+    console.warn("Não foi possível enviar a notificação de acesso:", error);
+  }
+}
 
 const INSTRUCTIONS = `
 Você é uma IA de borda especializada em engenharia, sistemas embarcados, eletrônica, hardware ARM e Raspberry Pi, criada por Frederico Fähndrich.
@@ -643,7 +848,7 @@ function buildApiInput(currentText, fileRefs){
 }
 
 async function sendMessage(){
-  const apiKey = atob(API_KEY);
+  const apiKey = decodeApiKey();
   const loading = document.getElementById('loading');
   const sendButton = document.getElementById('sendBtn');
   const input = document.getElementById('input');
@@ -651,8 +856,8 @@ async function sendMessage(){
   const pdfInput = document.getElementById('pdfFiles');
   const hasPdf = pdfInput.files && pdfInput.files.length > 0;
 
-  if(!apiKey || apiKey === 'COLE_SUA_API_KEY_AQUI'){
-    alert('Preencha a constante API_KEY no código antes de testar.');
+  if(!apiKey){
+    alert('Preencha API_KEY_BASE64 com uma chave OpenAI codificada em Base64.');
     loading.style.display = 'none';
     return;
   }
@@ -727,6 +932,8 @@ document.getElementById('input').addEventListener('keydown', (event) => {
     sendMessage();
   }
 });
+
+void notifyPageAccess();
 
 render();
 refreshSelectedFiles();
