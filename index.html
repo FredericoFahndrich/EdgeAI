@@ -2,37 +2,56 @@
 <html lang="pt-BR">
 
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
 
   <title>EDGE AI</title>
 
+
   <style>
 
-    :root{
-      --bg-1:#07101f;
-      --bg-2:#0e1731;
-      --panel:rgba(15,24,49,0.78);
-      --panel-2:rgba(23,35,68,0.86);
-      --panel-3:rgba(255,255,255,0.06);
-      --border:rgba(255,255,255,0.09);
-      --text:#eef3ff;
-      --muted:#9fb0d8;
-      --accent:#72a8ff;
-      --accent-2:#7a5cff;
-      --success:#43d6a2;
-      --danger:#ff7b8b;
-      --shadow:0 20px 50px rgba(0,0,0,0.35);
+    :root {
+
+      --bg-1: #07101f;
+      --bg-2: #0e1731;
+
+      --panel: rgba(15, 24, 49, 0.78);
+      --panel-2: rgba(23, 35, 68, 0.86);
+      --panel-3: rgba(255, 255, 255, 0.06);
+
+      --border: rgba(255, 255, 255, 0.09);
+
+      --text: #eef3ff;
+      --muted: #9fb0d8;
+
+      --accent: #72a8ff;
+      --accent-2: #7a5cff;
+
+      --success: #43d6a2;
+      --danger: #ff7b8b;
+      --warning: #ffc857;
+
+      --shadow:
+        0 20px 50px
+        rgba(0, 0, 0, 0.35);
     }
 
-    *{
-      box-sizing:border-box;
+
+    * {
+      box-sizing: border-box;
     }
+
 
     html,
-    body{
-      margin:0;
-      min-height:100%;
+    body {
+
+      margin: 0;
+      min-height: 100%;
 
       font-family:
         Inter,
@@ -40,19 +59,22 @@
         Arial,
         sans-serif;
 
-      color:var(--text);
+      color: var(--text);
 
       background:
+
         radial-gradient(
           circle at top left,
-          rgba(122,92,255,0.18),
+          rgba(122, 92, 255, 0.18),
           transparent 28%
         ),
+
         radial-gradient(
           circle at top right,
-          rgba(114,168,255,0.18),
+          rgba(114, 168, 255, 0.18),
           transparent 25%
         ),
+
         linear-gradient(
           180deg,
           var(--bg-1) 0%,
@@ -60,689 +82,1158 @@
         );
     }
 
-    body{
-      padding:24px;
+
+    body {
+      padding: 24px;
     }
 
-    .shell{
-      max-width:1100px;
-      margin:0 auto;
 
-      display:grid;
-      grid-template-columns:320px 1fr;
+    .shell {
 
-      gap:20px;
+      max-width: 1100px;
 
-      height:calc(100vh - 48px);
+      margin: 0 auto;
 
-      min-height:0;
+      display: grid;
+
+      grid-template-columns:
+        320px 1fr;
+
+      gap: 20px;
+
+      height:
+        calc(100vh - 48px);
+
+      min-height: 0;
     }
 
-    .card{
-      background:var(--panel);
+
+    .card {
+
+      background:
+        var(--panel);
 
       border:
         1px solid
         var(--border);
 
-      border-radius:28px;
+      border-radius:
+        28px;
 
-      backdrop-filter:blur(16px);
+      backdrop-filter:
+        blur(16px);
 
-      box-shadow:var(--shadow);
+      box-shadow:
+        var(--shadow);
     }
 
-    .sidebar{
-      padding:22px;
 
-      display:flex;
-      flex-direction:column;
+    /*
+    ========================================================
+    SIDEBAR
+    ========================================================
+    */
 
-      gap:18px;
+    .sidebar {
+
+      padding: 22px;
+
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 18px;
     }
 
-    .brand{
-      display:flex;
-      align-items:flex-start;
 
-      gap:14px;
+    .brand {
+
+      display: flex;
+
+      align-items: flex-start;
+
+      gap: 14px;
     }
 
-    .brand-icon{
-      width:52px;
-      height:52px;
 
-      border-radius:16px;
+    .brand-icon {
+
+      width: 52px;
+
+      height: 52px;
+
+      border-radius: 16px;
 
       background:
+
         linear-gradient(
           135deg,
           var(--accent),
           var(--accent-2)
         );
 
-      display:flex;
-      align-items:center;
-      justify-content:center;
+      display: flex;
 
-      font-size:24px;
+      align-items: center;
+
+      justify-content: center;
+
+      font-size: 24px;
 
       box-shadow:
+
         0 10px 25px
-        rgba(114,168,255,0.25);
+        rgba(114, 168, 255, 0.25);
 
-      flex-shrink:0;
+      flex-shrink: 0;
     }
 
-    .brand h1{
-      margin:0;
 
-      font-size:1.35rem;
+    .brand h1 {
 
-      line-height:1.1;
+      margin: 0;
+
+      font-size: 1.35rem;
+
+      line-height: 1.1;
     }
 
-    .brand p{
-      margin:6px 0 0;
 
-      color:var(--muted);
+    .brand p {
 
-      font-size:0.92rem;
+      margin:
+        6px 0 0;
 
-      line-height:1.45;
+      color:
+        var(--muted);
+
+      font-size:
+        0.92rem;
+
+      line-height:
+        1.45;
     }
 
-    .panel-block{
-      background:var(--panel-3);
+
+    .panel-block {
+
+      background:
+        var(--panel-3);
 
       border:
         1px solid
         var(--border);
 
-      border-radius:20px;
+      border-radius:
+        20px;
 
-      padding:16px;
+      padding:
+        16px;
     }
 
-    .label{
-      display:block;
 
-      margin-bottom:10px;
+    .label {
 
-      font-size:0.84rem;
+      display: block;
 
-      text-transform:uppercase;
+      margin-bottom:
+        10px;
 
-      letter-spacing:0.08em;
+      font-size:
+        0.84rem;
 
-      color:var(--muted);
+      text-transform:
+        uppercase;
+
+      letter-spacing:
+        0.08em;
+
+      color:
+        var(--muted);
     }
 
-    .info{
-      color:var(--muted);
 
-      font-size:0.9rem;
+    .info {
 
-      line-height:1.55;
+      color:
+        var(--muted);
+
+      font-size:
+        0.9rem;
+
+      line-height:
+        1.55;
     }
 
-    .file-input{
-      width:100%;
 
-      padding:14px;
+    #visitorNameDisplay {
 
-      border-radius:16px;
+      color:
+        var(--text);
+
+      font-weight:
+        600;
+    }
+
+
+    /*
+    ========================================================
+    PDF
+    ========================================================
+    */
+
+    .file-input {
+
+      width: 100%;
+
+      padding: 14px;
+
+      border-radius:
+        16px;
 
       border:
         1px dashed
-        rgba(114,168,255,0.35);
+        rgba(114, 168, 255, 0.35);
 
       background:
-        rgba(255,255,255,0.03);
+        rgba(255, 255, 255, 0.03);
 
-      color:var(--text);
+      color:
+        var(--text);
 
-      cursor:pointer;
+      cursor:
+        pointer;
     }
 
-    .file-input::-webkit-file-upload-button{
+
+    .file-input::-webkit-file-upload-button {
+
       background:
+
         linear-gradient(
           135deg,
           var(--accent),
           var(--accent-2)
         );
 
-      color:#091120;
+      color:
+        #091120;
 
-      border:none;
+      border:
+        none;
 
-      border-radius:12px;
+      border-radius:
+        12px;
 
-      padding:10px 14px;
+      padding:
+        10px 14px;
 
-      margin-right:12px;
+      margin-right:
+        12px;
 
-      cursor:pointer;
+      cursor:
+        pointer;
 
-      font-weight:700;
+      font-weight:
+        700;
     }
 
-    .file-list{
-      display:flex;
 
-      flex-wrap:wrap;
+    .file-list {
 
-      gap:8px;
+      display:
+        flex;
 
-      margin-top:12px;
+      flex-wrap:
+        wrap;
+
+      gap:
+        8px;
+
+      margin-top:
+        12px;
     }
 
-    .file-chip{
-      display:inline-flex;
 
-      align-items:center;
+    .file-chip {
 
-      gap:8px;
+      display:
+        inline-flex;
 
-      padding:8px 12px;
+      align-items:
+        center;
 
-      border-radius:999px;
+      gap:
+        8px;
+
+      padding:
+        8px 12px;
+
+      border-radius:
+        999px;
 
       background:
-        rgba(114,168,255,0.10);
+        rgba(114, 168, 255, 0.10);
 
       border:
         1px solid
-        rgba(114,168,255,0.18);
+        rgba(114, 168, 255, 0.18);
 
-      color:#dce8ff;
+      color:
+        #dce8ff;
 
-      font-size:0.84rem;
+      font-size:
+        0.84rem;
 
-      max-width:100%;
+      max-width:
+        100%;
     }
 
-    .file-chip span{
-      white-space:nowrap;
 
-      overflow:hidden;
+    .file-chip span {
 
-      text-overflow:ellipsis;
+      white-space:
+        nowrap;
 
-      max-width:220px;
+      overflow:
+        hidden;
+
+      text-overflow:
+        ellipsis;
+
+      max-width:
+        220px;
     }
 
-    .main{
-      display:grid;
+
+    /*
+    ========================================================
+    ÁREA PRINCIPAL
+    ========================================================
+    */
+
+    .main {
+
+      display:
+        grid;
 
       grid-template-rows:
         auto
-        minmax(0,1fr)
+        minmax(0, 1fr)
         auto;
 
-      overflow:hidden;
+      overflow:
+        hidden;
 
-      min-height:0;
+      min-height:
+        0;
     }
 
-    .topbar{
-      padding:18px 22px;
+
+    .topbar {
+
+      padding:
+        18px 22px;
 
       border-bottom:
         1px solid
         var(--border);
 
-      display:flex;
+      display:
+        flex;
 
-      justify-content:space-between;
+      justify-content:
+        space-between;
 
-      align-items:center;
+      align-items:
+        center;
 
-      gap:12px;
+      gap:
+        12px;
     }
 
-    .topbar h2{
-      margin:0;
 
-      font-size:1.08rem;
+    .topbar h2 {
+
+      margin:
+        0;
+
+      font-size:
+        1.08rem;
     }
 
-    .topbar p{
-      margin:4px 0 0;
 
-      color:var(--muted);
+    .topbar p {
 
-      font-size:0.9rem;
+      margin:
+        4px 0 0;
+
+      color:
+        var(--muted);
+
+      font-size:
+        0.9rem;
     }
 
-    .status{
-      display:flex;
 
-      align-items:center;
+    /*
+    ========================================================
+    STATUS
+    ========================================================
+    */
 
-      gap:10px;
+    .status {
 
-      padding:10px 14px;
+      display:
+        flex;
+
+      align-items:
+        center;
+
+      gap:
+        10px;
+
+      padding:
+        10px 14px;
 
       background:
-        rgba(255,255,255,0.04);
+        rgba(255, 255, 255, 0.04);
 
       border:
         1px solid
         var(--border);
 
-      border-radius:999px;
+      border-radius:
+        999px;
 
-      font-size:0.9rem;
+      font-size:
+        0.9rem;
 
-      color:var(--muted);
+      color:
+        var(--muted);
+
+      flex-shrink:
+        0;
     }
 
-    .status-dot{
-      width:10px;
-      height:10px;
 
-      border-radius:50%;
+    .status-dot {
 
-      background:var(--success);
+      width:
+        10px;
+
+      height:
+        10px;
+
+      border-radius:
+        50%;
+
+      background:
+        var(--warning);
 
       box-shadow:
+
         0 0 0 6px
-        rgba(67,214,162,0.12);
+        rgba(255, 200, 87, 0.12);
     }
 
-    .chat{
-      padding:24px;
 
-      min-height:0;
+    /*
+    ========================================================
+    CHAT
+    ========================================================
+    */
 
-      overflow-y:auto;
-      overflow-x:hidden;
+    .chat {
 
-      display:flex;
+      padding:
+        24px;
 
-      flex-direction:column;
+      min-height:
+        0;
 
-      gap:16px;
+      overflow-y:
+        auto;
 
-      scroll-behavior:smooth;
+      overflow-x:
+        hidden;
 
-      scrollbar-width:thin;
+      display:
+        flex;
+
+      flex-direction:
+        column;
+
+      gap:
+        16px;
+
+      scroll-behavior:
+        smooth;
+
+      scrollbar-width:
+        thin;
 
       scrollbar-color:
-        rgba(114,168,255,0.7)
-        rgba(255,255,255,0.02);
+        rgba(114, 168, 255, 0.7)
+        rgba(255, 255, 255, 0.02);
     }
 
-    .chat::-webkit-scrollbar{
-      width:10px;
+
+    .chat::-webkit-scrollbar {
+
+      width:
+        10px;
     }
 
-    .chat::-webkit-scrollbar-track{
+
+    .chat::-webkit-scrollbar-track {
+
       background:
-        rgba(255,255,255,0.02);
+        rgba(255, 255, 255, 0.02);
     }
 
-    .chat::-webkit-scrollbar-thumb{
+
+    .chat::-webkit-scrollbar-thumb {
+
       background:
+
         linear-gradient(
           180deg,
-          rgba(114,168,255,0.65),
-          rgba(122,92,255,0.65)
+          rgba(114, 168, 255, 0.65),
+          rgba(122, 92, 255, 0.65)
         );
 
-      border-radius:10px;
+      border-radius:
+        10px;
     }
 
-    .empty-state{
-      margin:auto;
 
-      text-align:center;
+    /*
+    ========================================================
+    EMPTY STATE
+    ========================================================
+    */
 
-      max-width:520px;
+    .empty-state {
 
-      color:var(--muted);
+      margin:
+        auto;
 
-      line-height:1.6;
+      text-align:
+        center;
 
-      padding:24px;
+      max-width:
+        520px;
+
+      color:
+        var(--muted);
+
+      line-height:
+        1.6;
+
+      padding:
+        24px;
     }
 
-    .empty-state .hero{
-      width:74px;
-      height:74px;
 
-      margin:0 auto 16px;
+    .empty-state .hero {
 
-      border-radius:22px;
+      width:
+        74px;
+
+      height:
+        74px;
+
+      margin:
+        0 auto 16px;
+
+      border-radius:
+        22px;
 
       background:
+
         linear-gradient(
           135deg,
-          rgba(114,168,255,0.18),
-          rgba(122,92,255,0.18)
+          rgba(114, 168, 255, 0.18),
+          rgba(122, 92, 255, 0.18)
         );
 
       border:
         1px solid
-        rgba(255,255,255,0.08);
+        rgba(255, 255, 255, 0.08);
 
-      display:flex;
+      display:
+        flex;
 
-      align-items:center;
+      align-items:
+        center;
 
-      justify-content:center;
+      justify-content:
+        center;
 
-      font-size:32px;
+      font-size:
+        32px;
     }
 
-    .message-row{
-      display:flex;
 
-      width:100%;
+    /*
+    ========================================================
+    MENSAGENS
+    ========================================================
+    */
+
+    .message-row {
+
+      display:
+        flex;
+
+      width:
+        100%;
+
+      animation:
+        fadeInUp
+        0.20s ease;
     }
 
-    .message-row.user{
-      justify-content:flex-end;
+
+    .message-row.user {
+
+      justify-content:
+        flex-end;
     }
 
-    .message-row.assistant{
-      justify-content:flex-start;
+
+    .message-row.assistant {
+
+      justify-content:
+        flex-start;
     }
 
-    .bubble{
+
+    .bubble {
+
       max-width:
-        min(78%,760px);
+        min(78%, 760px);
 
-      padding:14px 16px;
+      padding:
+        14px 16px;
 
-      border-radius:22px;
+      border-radius:
+        22px;
 
-      line-height:1.58;
+      line-height:
+        1.58;
 
-      white-space:pre-wrap;
+      white-space:
+        pre-wrap;
 
-      word-wrap:break-word;
+      word-wrap:
+        break-word;
 
       border:
         1px solid
         var(--border);
+
+      box-shadow:
+
+        0 10px 28px
+        rgba(0, 0, 0, 0.18);
     }
 
-    .message-row.user .bubble{
+
+    .message-row.user .bubble {
+
       background:
+
         linear-gradient(
           135deg,
-          rgba(114,168,255,0.24),
-          rgba(122,92,255,0.24)
+          rgba(114, 168, 255, 0.24),
+          rgba(122, 92, 255, 0.24)
         );
 
-      border-bottom-right-radius:8px;
+      border-bottom-right-radius:
+        8px;
     }
 
-    .message-row.assistant .bubble{
+
+    .message-row.assistant .bubble {
+
       background:
-        rgba(255,255,255,0.04);
+        rgba(255, 255, 255, 0.04);
 
-      border-bottom-left-radius:8px;
+      border-bottom-left-radius:
+        8px;
     }
 
-    .meta{
-      font-size:0.74rem;
 
-      color:var(--muted);
+    .meta {
 
-      margin-bottom:7px;
+      font-size:
+        0.74rem;
 
-      text-transform:uppercase;
+      color:
+        var(--muted);
 
-      letter-spacing:0.08em;
+      margin-bottom:
+        7px;
+
+      text-transform:
+        uppercase;
+
+      letter-spacing:
+        0.08em;
     }
 
-    .loading{
-      display:none;
+
+    /*
+    ========================================================
+    LOADING
+    ========================================================
+    */
+
+    .loading {
+
+      display:
+        none;
 
       padding:
         0 24px 18px;
     }
 
-    .typing{
-      display:inline-flex;
 
-      align-items:center;
+    .typing {
 
-      gap:8px;
+      display:
+        inline-flex;
 
-      padding:10px 14px;
+      align-items:
+        center;
 
-      border-radius:999px;
+      gap:
+        8px;
+
+      padding:
+        10px 14px;
+
+      border-radius:
+        999px;
 
       background:
-        rgba(255,255,255,0.05);
+        rgba(255, 255, 255, 0.05);
 
       border:
         1px solid
         var(--border);
 
-      color:var(--muted);
+      color:
+        var(--muted);
 
-      font-size:0.9rem;
+      font-size:
+        0.9rem;
     }
 
-    .typing-dots{
-      display:inline-flex;
 
-      gap:5px;
+    .typing-dots {
+
+      display:
+        inline-flex;
+
+      gap:
+        5px;
     }
 
-    .typing-dots span{
-      width:8px;
-      height:8px;
 
-      border-radius:50%;
+    .typing-dots span {
 
-      background:var(--accent);
+      width:
+        8px;
+
+      height:
+        8px;
+
+      border-radius:
+        50%;
+
+      background:
+        var(--accent);
 
       animation:
-        blink 1.2s
+        blink
+        1.2s
         infinite ease-in-out;
     }
 
-    .typing-dots span:nth-child(2){
-      animation-delay:0.15s;
+
+    .typing-dots span:nth-child(2) {
+
+      animation-delay:
+        0.15s;
     }
 
-    .typing-dots span:nth-child(3){
-      animation-delay:0.30s;
+
+    .typing-dots span:nth-child(3) {
+
+      animation-delay:
+        0.30s;
     }
 
-    .composer{
-      padding:18px;
+
+    /*
+    ========================================================
+    COMPOSER
+    ========================================================
+    */
+
+    .composer {
+
+      padding:
+        18px;
 
       border-top:
         1px solid
         var(--border);
 
       background:
-        rgba(10,17,35,0.35);
+        rgba(10, 17, 35, 0.35);
     }
 
-    .composer-box{
-      display:grid;
+
+    .composer-box {
+
+      display:
+        grid;
 
       grid-template-columns:
         1fr auto;
 
-      gap:12px;
+      gap:
+        12px;
 
-      align-items:end;
+      align-items:
+        end;
 
       background:
-        rgba(255,255,255,0.04);
+        rgba(255, 255, 255, 0.04);
 
       border:
         1px solid
         var(--border);
 
-      border-radius:24px;
+      border-radius:
+        24px;
 
-      padding:12px;
+      padding:
+        12px;
     }
 
-    .composer textarea{
-      width:100%;
 
-      min-height:64px;
+    .composer textarea {
 
-      max-height:180px;
+      width:
+        100%;
 
-      resize:vertical;
+      min-height:
+        64px;
 
-      border:none;
+      max-height:
+        180px;
 
-      outline:none;
+      resize:
+        vertical;
 
-      background:transparent;
+      border:
+        none;
 
-      color:var(--text);
-
-      font:inherit;
-
-      line-height:1.5;
-
-      padding:8px 10px;
-    }
-
-    .composer textarea::placeholder{
-      color:#8fa2d1;
-    }
-
-    .send-btn{
-      min-width:120px;
-
-      height:52px;
-
-      border:none;
-
-      border-radius:18px;
-
-      cursor:pointer;
+      outline:
+        none;
 
       background:
+        transparent;
+
+      color:
+        var(--text);
+
+      font:
+        inherit;
+
+      line-height:
+        1.5;
+
+      padding:
+        8px 10px;
+    }
+
+
+    .composer textarea::placeholder {
+
+      color:
+        #8fa2d1;
+    }
+
+
+    .send-btn {
+
+      min-width:
+        120px;
+
+      height:
+        52px;
+
+      border:
+        none;
+
+      border-radius:
+        18px;
+
+      cursor:
+        pointer;
+
+      background:
+
         linear-gradient(
           135deg,
           var(--accent),
           var(--accent-2)
         );
 
-      color:#091120;
+      color:
+        #091120;
 
-      font-weight:800;
+      font-weight:
+        800;
 
-      font-size:0.95rem;
+      font-size:
+        0.95rem;
+
+      transition:
+        transform 0.16s ease,
+        opacity 0.16s ease;
     }
 
-    .send-btn:disabled{
-      opacity:0.65;
 
-      cursor:not-allowed;
+    .send-btn:hover:not(:disabled) {
+
+      transform:
+        translateY(-1px);
     }
 
-    .footer-note{
-      margin-top:10px;
 
-      color:var(--muted);
+    .send-btn:disabled {
 
-      font-size:0.82rem;
+      opacity:
+        0.65;
 
-      padding:0 4px;
+      cursor:
+        not-allowed;
 
-      text-align:center;
+      transform:
+        none;
     }
 
-    .version{
-      margin-top:7px;
 
-      text-align:center;
+    /*
+    ========================================================
+    RODAPÉ
+    ========================================================
+    */
 
-      color:var(--muted);
+    .footer-note {
 
-      font-size:0.70rem;
+      margin-top:
+        10px;
 
-      opacity:0.60;
+      color:
+        var(--muted);
 
-      letter-spacing:0.04em;
+      font-size:
+        0.82rem;
+
+      padding:
+        0 4px;
+
+      text-align:
+        center;
     }
 
-    @keyframes blink{
+
+    .privacy-note {
+
+      margin-top:
+        5px;
+
+      color:
+        var(--muted);
+
+      font-size:
+        0.68rem;
+
+      opacity:
+        0.55;
+
+      text-align:
+        center;
+    }
+
+
+    .version {
+
+      margin-top:
+        7px;
+
+      text-align:
+        center;
+
+      color:
+        var(--muted);
+
+      font-size:
+        0.70rem;
+
+      opacity:
+        0.60;
+
+      letter-spacing:
+        0.04em;
+    }
+
+
+    /*
+    ========================================================
+    ANIMAÇÕES
+    ========================================================
+    */
+
+    @keyframes fadeInUp {
+
+      from {
+
+        opacity:
+          0;
+
+        transform:
+          translateY(8px);
+      }
+
+      to {
+
+        opacity:
+          1;
+
+        transform:
+          translateY(0);
+      }
+    }
+
+
+    @keyframes blink {
 
       0%,
       80%,
-      100%{
-        opacity:0.25;
+      100% {
 
-        transform:scale(0.9);
+        opacity:
+          0.25;
+
+        transform:
+          scale(0.9);
       }
 
-      40%{
-        opacity:1;
+      40% {
 
-        transform:scale(1);
+        opacity:
+          1;
+
+        transform:
+          scale(1);
       }
     }
 
-    @media(max-width:920px){
 
-      body{
-        padding:14px;
+    /*
+    ========================================================
+    MOBILE
+    ========================================================
+    */
+
+    @media(max-width: 920px) {
+
+      body {
+
+        padding:
+          14px;
       }
 
-      .shell{
-        grid-template-columns:1fr;
 
-        height:auto;
+      .shell {
+
+        grid-template-columns:
+          1fr;
+
+        height:
+          auto;
 
         min-height:
           calc(100vh - 28px);
       }
 
-      .main{
+
+      .main {
+
         height:
           calc(100vh - 28px);
 
-        min-height:600px;
+        min-height:
+          600px;
       }
 
-      .bubble{
-        max-width:90%;
+
+      .bubble {
+
+        max-width:
+          90%;
       }
 
-      .composer-box{
-        grid-template-columns:1fr;
+
+      .composer-box {
+
+        grid-template-columns:
+          1fr;
       }
 
-      .send-btn{
-        width:100%;
+
+      .send-btn {
+
+        width:
+          100%;
       }
     }
 
   </style>
+
 </head>
 
 
 <body>
 
+
 <div class="shell">
 
 
+  <!--
+  ==========================================================
+  SIDEBAR
+  ==========================================================
+  -->
+
   <aside class="card sidebar">
+
 
     <div class="brand">
 
       <div class="brand-icon">
         🤖
       </div>
+
 
       <div>
 
@@ -777,8 +1268,25 @@
     <div class="panel-block">
 
       <span class="label">
+        Usuário
+      </span>
+
+      <div
+        id="visitorNameDisplay"
+        class="info"
+      >
+        Ainda não informado
+      </div>
+
+    </div>
+
+
+    <div class="panel-block">
+
+      <span class="label">
         Arquivos PDF
       </span>
+
 
       <input
         id="pdfFiles"
@@ -787,6 +1295,7 @@
         accept="application/pdf,.pdf"
         multiple
       >
+
 
       <div
         id="selectedFiles"
@@ -813,20 +1322,29 @@
       </span>
 
       <div class="info">
-        Chat técnico com suporte a PDFs
-        e contexto de conversa.
+        Chat técnico com suporte a PDFs,
+        contexto de conversa e identificação
+        simples do visitante.
       </div>
 
     </div>
+
 
   </aside>
 
 
 
+  <!--
+  ==========================================================
+  CHAT
+  ==========================================================
+  -->
+
   <main class="card main">
 
 
     <div class="topbar">
+
 
       <div>
 
@@ -851,10 +1369,11 @@
         ></span>
 
         <span id="statusText">
-          Pronto
+          Verificando...
         </span>
 
       </div>
+
 
     </div>
 
@@ -897,9 +1416,10 @@
 
       <div class="composer-box">
 
+
         <textarea
           id="input"
-          placeholder="Digite sua mensagem ou descreva o que deseja analisar..."
+          placeholder="Digite sua mensagem..."
         ></textarea>
 
 
@@ -911,6 +1431,7 @@
           Enviar
         </button>
 
+
       </div>
 
 
@@ -919,16 +1440,22 @@
       </div>
 
 
-      <div class="version">
+      <div class="privacy-note">
+        O nome informado é associado à conversa para manter o contexto do atendimento.
+      </div>
 
+
+      <div class="version">
         EDGE AI •
         <span id="appVersion"></span>
-
       </div>
+
 
     </div>
 
+
   </main>
+
 
 </div>
 
@@ -943,18 +1470,12 @@ VERSÃO
 */
 
 const APP_VERSION =
-  "2.0.0";
+  "2.2.0";
 
 
 /*
 ============================================================
-BACKEND
-
-A OpenAI NÃO é mais chamada diretamente
-pelo navegador.
-
-Toda comunicação agora passa pelo
-Cloudflare Worker.
+BACKEND CLOUDFLARE
 ============================================================
 */
 
@@ -964,16 +1485,95 @@ const BACKEND_URL =
 
 /*
 ============================================================
-HISTÓRICO
+CONVERSATION ID
+
+Cada navegador recebe um UUID.
+
+Isso NÃO é login.
+
+Serve somente para o backend
+identificar a conversa.
 ============================================================
 */
 
-let messages = [];
+let conversationId =
+  localStorage.getItem(
+    "edgeai_conversation_id"
+  );
+
+
+if (!conversationId) {
+
+  conversationId =
+    crypto.randomUUID();
+
+
+  localStorage.setItem(
+    "edgeai_conversation_id",
+    conversationId
+  );
+}
 
 
 /*
 ============================================================
-MOSTRA VERSÃO
+NOME DO VISITANTE
+============================================================
+*/
+
+let visitorName =
+  localStorage.getItem(
+    "edgeai_user_name"
+  ) || "";
+
+
+/*
+Primeira pergunta.
+
+Ela fica guardada até o visitante
+informar o nome.
+*/
+
+let pendingFirstMessage =
+  "";
+
+
+/*
+Indica que a próxima mensagem
+deve ser interpretada como nome.
+*/
+
+let waitingForName =
+  false;
+
+
+/*
+============================================================
+HISTÓRICOS
+
+messages:
+histórico VISUAL mostrado na página.
+
+apiHistory:
+somente mensagens reais enviadas
+para a IA.
+
+A pergunta local "qual é seu nome?"
+não entra no histórico da OpenAI.
+============================================================
+*/
+
+let messages =
+  [];
+
+
+let apiHistory =
+  [];
+
+
+/*
+============================================================
+VERSÃO VISÍVEL
 ============================================================
 */
 
@@ -982,8 +1582,34 @@ document
     "appVersion"
   )
   .textContent =
-    "v" +
-    APP_VERSION;
+    "v" + APP_VERSION;
+
+
+/*
+============================================================
+MOSTRA NOME NA SIDEBAR
+============================================================
+*/
+
+function updateVisitorNameDisplay() {
+
+  const element =
+    document.getElementById(
+      "visitorNameDisplay"
+    );
+
+
+  if (visitorName) {
+
+    element.textContent =
+      visitorName;
+
+  } else {
+
+    element.textContent =
+      "Ainda não informado";
+  }
+}
 
 
 /*
@@ -992,7 +1618,7 @@ RENDERIZA CHAT
 ============================================================
 */
 
-function render(){
+function render() {
 
   const chat =
     document.getElementById(
@@ -1000,7 +1626,9 @@ function render(){
     );
 
 
-  if(messages.length === 0){
+  if (
+    messages.length === 0
+  ) {
 
     chat.innerHTML = `
 
@@ -1015,12 +1643,10 @@ function render(){
         </h3>
 
         <p>
-
           Faça uma pergunta técnica,
           envie PDFs ou peça análise
           sobre hardware, firmware,
           Raspberry Pi e sistemas embarcados.
-
         </p>
 
       </div>
@@ -1031,7 +1657,8 @@ function render(){
   }
 
 
-  chat.innerHTML = "";
+  chat.innerHTML =
+    "";
 
 
   messages.forEach(
@@ -1116,11 +1743,48 @@ function render(){
 
 /*
 ============================================================
-ARQUIVOS SELECIONADOS
+ESCAPE HTML
 ============================================================
 */
 
-function refreshSelectedFiles(){
+function escapeHtml(text) {
+
+  return String(text)
+
+    .replaceAll(
+      "&",
+      "&amp;"
+    )
+
+    .replaceAll(
+      "<",
+      "&lt;"
+    )
+
+    .replaceAll(
+      ">",
+      "&gt;"
+    )
+
+    .replaceAll(
+      '"',
+      "&quot;"
+    )
+
+    .replaceAll(
+      "'",
+      "&#039;"
+    );
+}
+
+
+/*
+============================================================
+LISTA DE PDFs
+============================================================
+*/
+
+function refreshSelectedFiles() {
 
   const files =
     document
@@ -1136,10 +1800,10 @@ function refreshSelectedFiles(){
     );
 
 
-  if(
+  if (
     !files ||
     files.length === 0
-  ){
+  ) {
 
     container.innerHTML = `
 
@@ -1182,58 +1846,120 @@ function refreshSelectedFiles(){
 
 /*
 ============================================================
-ESCAPE HTML
+NORMALIZA NOME
+
+Aceita respostas como:
+
+João
+
+Meu nome é João
+
+Pode me chamar de João
+
+Me chamo João
 ============================================================
 */
 
-function escapeHtml(text){
+function normalizeName(text) {
 
-  return String(text)
+  let name =
+    String(
+      text || ""
+    ).trim();
 
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
 
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
+  name =
+    name.replace(
 
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
+      /^(meu nome é|meu nome e|me chamo|pode me chamar de|pode chamar de|sou o|sou a)\s+/i,
 
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-
-    .replaceAll(
-      "'",
-      "&#039;"
+      ""
     );
+
+
+  name =
+    name.trim();
+
+
+  /*
+  Remove pontuação excessiva
+  no final.
+  */
+
+  name =
+    name.replace(
+      /[.!?,;:]+$/g,
+      ""
+    );
+
+
+  /*
+  Evita nomes enormes.
+  */
+
+  if (
+    name.length > 80
+  ) {
+
+    name =
+      name.substring(
+        0,
+        80
+      );
+  }
+
+
+  return name;
 }
 
 
 /*
 ============================================================
-UPLOAD PDF PARA O BACKEND
-
-Agora o PDF vai:
-
-Browser
-   ↓
-Cloudflare Worker
-   ↓
-OpenAI
-
-A chave da OpenAI nunca chega ao navegador.
+VALIDAÇÃO SIMPLES DO NOME
 ============================================================
 */
 
-async function uploadPdfFiles(){
+function isValidName(name) {
+
+  if (
+    !name ||
+    name.length < 2
+  ) {
+
+    return false;
+  }
+
+
+  /*
+  Evita aceitar uma frase enorme
+  como nome.
+  */
+
+  const words =
+    name
+      .split(/\s+/)
+      .filter(Boolean);
+
+
+  if (
+    words.length > 8
+  ) {
+
+    return false;
+  }
+
+
+  return true;
+}
+
+
+/*
+============================================================
+UPLOAD DE PDF
+============================================================
+*/
+
+async function uploadPdfFiles() {
 
   const files =
     Array.from(
@@ -1247,12 +1973,13 @@ async function uploadPdfFiles(){
     );
 
 
-  const uploadedFiles = [];
+  const uploadedFiles =
+    [];
 
 
-  for(
+  for (
     const file of files
-  ){
+  ) {
 
     const formData =
       new FormData();
@@ -1283,13 +2010,12 @@ async function uploadPdfFiles(){
     let data;
 
 
-    try{
+    try {
 
       data =
         await response.json();
 
-    }
-    catch{
+    } catch {
 
       throw new Error(
         "O backend retornou uma resposta inválida durante o upload."
@@ -1297,18 +2023,25 @@ async function uploadPdfFiles(){
     }
 
 
-    if(!response.ok){
+    if (
+      !response.ok
+    ) {
 
       throw new Error(
+
         data.error ||
+
         `Erro ao enviar ${file.name}`
       );
     }
 
 
-    if(!data.id){
+    if (
+      !data.id
+    ) {
 
       throw new Error(
+
         `O backend não retornou o ID do arquivo ${file.name}.`
       );
     }
@@ -1322,7 +2055,6 @@ async function uploadPdfFiles(){
       name:
         data.name ||
         file.name
-
     });
   }
 
@@ -1337,13 +2069,9 @@ ENVIA MENSAGEM PARA O BACKEND
 ============================================================
 */
 
-async function sendMessage(){
-
-  const input =
-    document.getElementById(
-      "input"
-    );
-
+async function sendToBackend(
+  text
+) {
 
   const loading =
     document.getElementById(
@@ -1363,65 +2091,7 @@ async function sendMessage(){
     );
 
 
-  const text =
-    input.value.trim();
-
-
-  const hasPdf =
-    pdfInput.files &&
-    pdfInput.files.length > 0;
-
-
-  if(
-    !text &&
-    !hasPdf
-  ){
-    return;
-  }
-
-
-  /*
-  Guarda o histórico ANTES
-  da mensagem atual.
-  */
-
-  const historyBeforeCurrent =
-    messages.map(
-      message => ({
-        role:
-          message.role,
-
-        content:
-          message.content
-      })
-    );
-
-
-  /*
-  Mostra imediatamente a mensagem
-  digitada pelo usuário.
-  */
-
-  messages.push({
-
-    role:
-      "user",
-
-    content:
-      text ||
-      "[PDF enviado sem texto adicional]"
-
-  });
-
-
-  input.value =
-    "";
-
-
-  render();
-
-
-  try{
+  try {
 
     loading.style.display =
       "block";
@@ -1432,9 +2102,9 @@ async function sendMessage(){
 
 
     /*
-    ========================================
-    PRIMEIRO: envia PDFs ao Worker
-    ========================================
+    --------------------------------------------------------
+    UPLOAD DE PDFs
+    --------------------------------------------------------
     */
 
     const uploadedFiles =
@@ -1448,9 +2118,16 @@ async function sendMessage(){
 
 
     /*
-    ========================================
-    DEPOIS: envia mensagem ao Worker
-    ========================================
+    --------------------------------------------------------
+    ENVIO PARA /chat
+    --------------------------------------------------------
+
+    conversation_id e user_name já estão
+    preparados para o banco D1.
+
+    history é mantido por compatibilidade
+    com o Worker atual.
+    --------------------------------------------------------
     */
 
     const response =
@@ -1463,7 +2140,8 @@ async function sendMessage(){
           method:
             "POST",
 
-          headers:{
+          headers: {
+
             "Content-Type":
               "application/json"
           },
@@ -1471,11 +2149,17 @@ async function sendMessage(){
           body:
             JSON.stringify({
 
+              conversation_id:
+                conversationId,
+
+              user_name:
+                visitorName,
+
               message:
                 text,
 
               history:
-                historyBeforeCurrent,
+                apiHistory,
 
               file_ids:
                 fileIds,
@@ -1491,13 +2175,12 @@ async function sendMessage(){
     let data;
 
 
-    try{
+    try {
 
       data =
         await response.json();
 
-    }
-    catch{
+    } catch {
 
       throw new Error(
         "O backend retornou uma resposta inválida."
@@ -1505,47 +2188,93 @@ async function sendMessage(){
     }
 
 
-    if(!response.ok){
+    if (
+      !response.ok
+    ) {
 
-      /*
-      Durante testes, se o Worker
-      retornar detail, mostramos no console.
-      */
-
-      if(data.detail){
+      if (
+        data.detail
+      ) {
 
         console.error(
-          "Detalhe do backend:",
+          "Detalhes do backend:",
           data.detail
         );
       }
 
 
       throw new Error(
+
         data.error ||
+
         "Erro ao consultar o backend."
       );
     }
 
 
-    /*
-    ========================================
-    O FRONTEND RECEBE SOMENTE message
-
-    linkedin_action não chega aqui.
-    ========================================
-    */
-
-    if(
+    if (
       typeof data.message !==
-        "string"
-    ){
+      "string"
+    ) {
 
       throw new Error(
         "O backend não retornou uma mensagem válida."
       );
     }
 
+
+    /*
+    --------------------------------------------------------
+    ATUALIZA HISTÓRICO DA IA
+    --------------------------------------------------------
+    */
+
+    apiHistory.push({
+
+      role:
+        "user",
+
+      content:
+        text ||
+        "[PDF enviado]"
+
+    });
+
+
+    apiHistory.push({
+
+      role:
+        "assistant",
+
+      content:
+        data.message
+
+    });
+
+
+    /*
+    Limita histórico local.
+
+    O Worker também pode fazer
+    sua própria limitação.
+    */
+
+    if (
+      apiHistory.length > 20
+    ) {
+
+      apiHistory =
+        apiHistory.slice(
+          -20
+        );
+    }
+
+
+    /*
+    --------------------------------------------------------
+    MOSTRA SOMENTE A RESPOSTA PÚBLICA
+    --------------------------------------------------------
+    */
 
     messages.push({
 
@@ -1559,8 +2288,7 @@ async function sendMessage(){
 
 
     /*
-    Limpa arquivos selecionados
-    após resposta bem sucedida.
+    Limpa PDFs após envio bem sucedido.
     */
 
     pdfInput.value =
@@ -1572,8 +2300,7 @@ async function sendMessage(){
 
     render();
 
-  }
-  catch(error){
+  } catch(error) {
 
     console.error(
       "EDGE AI:",
@@ -1595,8 +2322,7 @@ async function sendMessage(){
 
     render();
 
-  }
-  finally{
+  } finally {
 
     loading.style.display =
       "none";
@@ -1604,18 +2330,275 @@ async function sendMessage(){
 
     sendButton.disabled =
       false;
-
   }
 }
 
 
 /*
 ============================================================
-TESTA SE O BACKEND ESTÁ ONLINE
+FUNÇÃO PRINCIPAL
 ============================================================
 */
 
-async function checkBackend(){
+async function sendMessage() {
+
+  const input =
+    document.getElementById(
+      "input"
+    );
+
+
+  const pdfInput =
+    document.getElementById(
+      "pdfFiles"
+    );
+
+
+  const text =
+    input.value.trim();
+
+
+  const hasPdf =
+    pdfInput.files &&
+    pdfInput.files.length > 0;
+
+
+  if (
+    !text &&
+    !hasPdf
+  ) {
+
+    return;
+  }
+
+
+  input.value =
+    "";
+
+
+  /*
+  ==========================================================
+  CASO 1
+  AINDA NÃO SABEMOS O NOME
+  ==========================================================
+
+  A primeira pergunta fica guardada.
+
+  NÃO é enviada ainda para o Worker/OpenAI.
+  ==========================================================
+  */
+
+  if (
+    !visitorName &&
+    !waitingForName
+  ) {
+
+    pendingFirstMessage =
+      text;
+
+
+    waitingForName =
+      true;
+
+
+    messages.push({
+
+      role:
+        "user",
+
+      content:
+        text ||
+        "[PDF enviado]"
+
+    });
+
+
+    messages.push({
+
+      role:
+        "assistant",
+
+      content:
+        "Olá! Antes de continuarmos, como posso te chamar?"
+
+    });
+
+
+    render();
+
+
+    /*
+    Ajusta placeholder para deixar
+    claro que estamos esperando o nome.
+    */
+
+    input.placeholder =
+      "Digite seu nome...";
+
+
+    input.focus();
+
+
+    return;
+  }
+
+
+  /*
+  ==========================================================
+  CASO 2
+  ESTAMOS ESPERANDO O NOME
+  ==========================================================
+  */
+
+  if (
+    waitingForName
+  ) {
+
+    const name =
+      normalizeName(
+        text
+      );
+
+
+    if (
+      !isValidName(
+        name
+      )
+    ) {
+
+      messages.push({
+
+        role:
+          "assistant",
+
+        content:
+          "Pode me informar seu nome, por favor?"
+
+      });
+
+
+      render();
+
+
+      input.placeholder =
+        "Digite seu nome...";
+
+
+      input.focus();
+
+
+      return;
+    }
+
+
+    visitorName =
+      name;
+
+
+    /*
+    Guarda nome no navegador.
+    */
+
+    localStorage.setItem(
+      "edgeai_user_name",
+      visitorName
+    );
+
+
+    updateVisitorNameDisplay();
+
+
+    waitingForName =
+      false;
+
+
+    /*
+    Mostra o nome digitado no chat.
+    */
+
+    messages.push({
+
+      role:
+        "user",
+
+      content:
+        text
+
+    });
+
+
+    render();
+
+
+    /*
+    Restaura placeholder.
+    */
+
+    input.placeholder =
+      "Digite sua mensagem...";
+
+
+    /*
+    Recupera a PRIMEIRA pergunta.
+    */
+
+    const originalMessage =
+      pendingFirstMessage;
+
+
+    pendingFirstMessage =
+      "";
+
+
+    /*
+    Agora sim enviamos a primeira
+    pergunta para o Worker.
+    */
+
+    await sendToBackend(
+      originalMessage
+    );
+
+
+    return;
+  }
+
+
+  /*
+  ==========================================================
+  CASO 3
+  NOME JÁ CONHECIDO
+  ==========================================================
+  */
+
+  messages.push({
+
+    role:
+      "user",
+
+    content:
+      text ||
+      "[PDF enviado]"
+
+  });
+
+
+  render();
+
+
+  await sendToBackend(
+    text
+  );
+}
+
+
+/*
+============================================================
+VERIFICA BACKEND
+============================================================
+*/
+
+async function checkBackend() {
 
   const statusText =
     document.getElementById(
@@ -1629,20 +2612,27 @@ async function checkBackend(){
     );
 
 
-  try{
+  try {
 
     const response =
       await fetch(
+
         BACKEND_URL +
         "/health",
+
         {
-          method:"GET",
-          cache:"no-store"
+          method:
+            "GET",
+
+          cache:
+            "no-store"
         }
       );
 
 
-    if(!response.ok){
+    if (
+      !response.ok
+    ) {
 
       throw new Error(
         "Backend indisponível."
@@ -1654,7 +2644,10 @@ async function checkBackend(){
       await response.json();
 
 
-    if(data.status !== "ok"){
+    if (
+      data.status !==
+      "ok"
+    ) {
 
       throw new Error(
         "Backend não está pronto."
@@ -1670,13 +2663,16 @@ async function checkBackend(){
       "var(--success)";
 
 
+    statusDot.style.boxShadow =
+      "0 0 0 6px rgba(67,214,162,0.12)";
+
+
     console.log(
       "EDGE AI Backend:",
       data
     );
 
-  }
-  catch(error){
+  } catch(error) {
 
     statusText.textContent =
       "Backend offline";
@@ -1684,6 +2680,10 @@ async function checkBackend(){
 
     statusDot.style.background =
       "var(--danger)";
+
+
+    statusDot.style.boxShadow =
+      "0 0 0 6px rgba(255,123,139,0.12)";
 
 
     console.warn(
@@ -1705,7 +2705,9 @@ document
     "pdfFiles"
   )
   .addEventListener(
+
     "change",
+
     refreshSelectedFiles
   );
 
@@ -1715,18 +2717,20 @@ document
     "input"
   )
   .addEventListener(
+
     "keydown",
+
     event => {
 
-      if(
-        event.key === "Enter" &&
+      if (
+        event.key ===
+          "Enter" &&
         !event.shiftKey
-      ){
+      ) {
 
         event.preventDefault();
 
         sendMessage();
-
       }
     }
   );
@@ -1738,6 +2742,8 @@ INICIALIZAÇÃO
 ============================================================
 */
 
+updateVisitorNameDisplay();
+
 render();
 
 refreshSelectedFiles();
@@ -1746,5 +2752,7 @@ void checkBackend();
 
 </script>
 
+
 </body>
+
 </html>
