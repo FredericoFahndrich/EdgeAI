@@ -1,49 +1,80 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
   <title>EDGE AI</title>
 
+
   <style>
+
     :root{
+
       --bg-1:#07101f;
       --bg-2:#0e1731;
+
       --panel:rgba(15,24,49,0.78);
       --panel-2:rgba(23,35,68,0.86);
       --panel-3:rgba(255,255,255,0.06);
+
       --border:rgba(255,255,255,0.09);
+
       --text:#eef3ff;
       --muted:#9fb0d8;
+
       --accent:#72a8ff;
       --accent-2:#7a5cff;
+
       --success:#43d6a2;
-      --danger:#ff7b8b;
-      --shadow:0 20px 50px rgba(0,0,0,0.35);
-      --radius:20px;
+
+      --shadow:
+        0 20px 50px
+        rgba(0,0,0,0.35);
+
     }
+
 
     *{
       box-sizing:border-box;
     }
 
+
     html,
     body{
+
       margin:0;
+
       min-height:100%;
-      font-family:Inter,Segoe UI,Arial,sans-serif;
+
+      font-family:
+        Inter,
+        Segoe UI,
+        Arial,
+        sans-serif;
+
       color:var(--text);
+
       background:
+
         radial-gradient(
           circle at top left,
           rgba(122,92,255,0.18),
           transparent 28%
         ),
+
         radial-gradient(
           circle at top right,
           rgba(114,168,255,0.18),
           transparent 25%
         ),
+
         linear-gradient(
           180deg,
           var(--bg-1) 0%,
@@ -51,745 +82,1068 @@
         );
     }
 
+
     body{
       padding:24px;
     }
 
+
     .shell{
+
       max-width:1100px;
+
       margin:0 auto;
+
       display:grid;
-      grid-template-columns:320px 1fr;
+
+      grid-template-columns:
+        320px 1fr;
+
       gap:20px;
-      height:calc(100vh - 48px);
+
+      height:
+        calc(100vh - 48px);
+
       min-height:0;
     }
 
+
     .card{
+
       background:var(--panel);
-      border:1px solid var(--border);
+
+      border:
+        1px solid
+        var(--border);
+
       border-radius:28px;
-      backdrop-filter:blur(16px);
-      box-shadow:var(--shadow);
+
+      backdrop-filter:
+        blur(16px);
+
+      box-shadow:
+        var(--shadow);
     }
 
+
     .sidebar{
+
       padding:22px;
+
       display:flex;
+
       flex-direction:column;
+
       gap:18px;
     }
 
+
     .brand{
+
       display:flex;
+
       align-items:flex-start;
+
       gap:14px;
     }
 
+
     .brand-icon{
+
       width:52px;
+
       height:52px;
+
       border-radius:16px;
+
       background:
         linear-gradient(
           135deg,
           var(--accent),
           var(--accent-2)
         );
+
       display:flex;
+
       align-items:center;
+
       justify-content:center;
+
       font-size:24px;
-      box-shadow:
-        0 10px 25px
-        rgba(114,168,255,0.25);
+
       flex-shrink:0;
     }
 
+
     .brand h1{
+
       margin:0;
+
       font-size:1.35rem;
+
       line-height:1.1;
     }
 
+
     .brand p{
-      margin:6px 0 0;
-      color:var(--muted);
-      font-size:0.92rem;
-      line-height:1.45;
+
+      margin:
+        6px 0 0;
+
+      color:
+        var(--muted);
+
+      font-size:
+        0.92rem;
+
+      line-height:
+        1.45;
     }
+
 
     .panel-block{
-      background:var(--panel-3);
-      border:1px solid var(--border);
-      border-radius:20px;
-      padding:16px;
+
+      background:
+        var(--panel-3);
+
+      border:
+        1px solid
+        var(--border);
+
+      border-radius:
+        20px;
+
+      padding:
+        16px;
     }
+
 
     .label{
-      font-size:0.84rem;
-      text-transform:uppercase;
-      letter-spacing:0.08em;
-      color:var(--muted);
-      margin-bottom:10px;
-      display:block;
+
+      font-size:
+        0.84rem;
+
+      text-transform:
+        uppercase;
+
+      letter-spacing:
+        0.08em;
+
+      color:
+        var(--muted);
+
+      margin-bottom:
+        10px;
+
+      display:
+        block;
     }
 
-    .file-input-wrap{
-      position:relative;
-    }
 
     .file-input{
+
       width:100%;
+
       padding:14px;
-      border-radius:16px;
+
+      border-radius:
+        16px;
+
       border:
         1px dashed
         rgba(114,168,255,0.35);
+
       background:
         rgba(255,255,255,0.03);
-      color:var(--text);
+
+      color:
+        var(--text);
+
       cursor:pointer;
     }
 
+
     .file-input::-webkit-file-upload-button{
+
       background:
         linear-gradient(
           135deg,
           var(--accent),
           var(--accent-2)
         );
-      color:#091120;
-      border:none;
-      border-radius:12px;
-      padding:10px 14px;
-      margin-right:12px;
-      cursor:pointer;
-      font-weight:700;
+
+      color:
+        #091120;
+
+      border:
+        none;
+
+      border-radius:
+        12px;
+
+      padding:
+        10px 14px;
+
+      margin-right:
+        12px;
+
+      cursor:
+        pointer;
+
+      font-weight:
+        700;
     }
+
 
     .file-list{
+
       display:flex;
+
       flex-wrap:wrap;
+
       gap:8px;
-      margin-top:12px;
+
+      margin-top:
+        12px;
     }
 
+
     .file-chip{
+
       display:inline-flex;
+
       align-items:center;
+
       gap:8px;
-      padding:8px 12px;
-      border-radius:999px;
+
+      padding:
+        8px 12px;
+
+      border-radius:
+        999px;
+
       background:
         rgba(114,168,255,0.10);
+
       border:
         1px solid
         rgba(114,168,255,0.18);
-      color:#dce8ff;
-      font-size:0.84rem;
-      max-width:100%;
+
+      color:
+        #dce8ff;
+
+      font-size:
+        0.84rem;
+
+      max-width:
+        100%;
     }
+
 
     .file-chip span{
-      white-space:nowrap;
-      overflow:hidden;
-      text-overflow:ellipsis;
-      max-width:220px;
+
+      white-space:
+        nowrap;
+
+      overflow:
+        hidden;
+
+      text-overflow:
+        ellipsis;
+
+      max-width:
+        220px;
     }
+
 
     .info{
-      color:var(--muted);
-      font-size:0.9rem;
-      line-height:1.55;
+
+      color:
+        var(--muted);
+
+      font-size:
+        0.9rem;
+
+      line-height:
+        1.55;
     }
 
+
     .main{
+
       display:grid;
+
       grid-template-rows:
         auto
-        minmax(0, 1fr)
+        minmax(0,1fr)
         auto;
+
       overflow:hidden;
+
       min-height:0;
     }
 
+
     .topbar{
-      padding:18px 22px;
+
+      padding:
+        18px 22px;
+
       border-bottom:
         1px solid
         var(--border);
+
       display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:12px;
+
+      justify-content:
+        space-between;
+
+      align-items:
+        center;
+
+      gap:
+        12px;
     }
+
 
     .topbar h2{
+
       margin:0;
-      font-size:1.08rem;
+
+      font-size:
+        1.08rem;
     }
+
 
     .topbar p{
-      margin:4px 0 0;
-      color:var(--muted);
-      font-size:0.9rem;
+
+      margin:
+        4px 0 0;
+
+      color:
+        var(--muted);
+
+      font-size:
+        0.9rem;
     }
 
+
     .status{
+
       display:flex;
+
       align-items:center;
+
       gap:10px;
-      padding:10px 14px;
+
+      padding:
+        10px 14px;
+
       background:
         rgba(255,255,255,0.04);
+
       border:
         1px solid
         var(--border);
-      border-radius:999px;
-      font-size:0.9rem;
-      color:var(--muted);
-      flex-shrink:0;
+
+      border-radius:
+        999px;
+
+      font-size:
+        0.9rem;
+
+      color:
+        var(--muted);
     }
 
+
     .status-dot{
+
       width:10px;
+
       height:10px;
-      border-radius:50%;
-      background:var(--success);
+
+      border-radius:
+        50%;
+
+      background:
+        var(--success);
+
       box-shadow:
         0 0 0 6px
         rgba(67,214,162,0.12);
     }
 
+
     .chat{
+
       padding:24px;
+
       min-height:0;
+
       overflow-y:auto;
-      overflow-x:hidden;
 
       display:flex;
-      flex-direction:column;
+
+      flex-direction:
+        column;
+
       gap:16px;
 
-      scroll-behavior:smooth;
-      scrollbar-gutter:stable;
-
-      background:
-        radial-gradient(
-          circle at right top,
-          rgba(122,92,255,0.08),
-          transparent 20%
-        ),
-        radial-gradient(
-          circle at left top,
-          rgba(114,168,255,0.08),
-          transparent 20%
-        );
-
-      scrollbar-width:thin;
-      scrollbar-color:
-        rgba(114,168,255,0.7)
-        rgba(255,255,255,0.02);
+      scroll-behavior:
+        smooth;
     }
 
-    .chat::-webkit-scrollbar{
-      width:10px;
-    }
-
-    .chat::-webkit-scrollbar-track{
-      background:
-        rgba(255,255,255,0.02);
-      border-radius:10px;
-    }
-
-    .chat::-webkit-scrollbar-thumb{
-      background:
-        linear-gradient(
-          180deg,
-          rgba(114,168,255,0.65),
-          rgba(122,92,255,0.65)
-        );
-      border-radius:10px;
-      border:2px solid transparent;
-      background-clip:padding-box;
-    }
-
-    .chat::-webkit-scrollbar-thumb:hover{
-      background:
-        linear-gradient(
-          180deg,
-          rgba(114,168,255,0.9),
-          rgba(122,92,255,0.9)
-        );
-      border:2px solid transparent;
-      background-clip:padding-box;
-    }
 
     .empty-state{
+
       margin:auto;
+
       text-align:center;
-      max-width:520px;
-      color:var(--muted);
-      line-height:1.6;
-      padding:24px;
+
+      max-width:
+        520px;
+
+      color:
+        var(--muted);
+
+      line-height:
+        1.6;
+
+      padding:
+        24px;
     }
 
+
     .empty-state .hero{
+
       width:74px;
+
       height:74px;
-      margin:0 auto 16px;
-      border-radius:22px;
+
+      margin:
+        0 auto 16px;
+
+      border-radius:
+        22px;
+
       background:
         linear-gradient(
           135deg,
           rgba(114,168,255,0.18),
           rgba(122,92,255,0.18)
         );
+
       border:
         1px solid
         rgba(255,255,255,0.08);
+
       display:flex;
+
       align-items:center;
+
       justify-content:center;
-      font-size:32px;
+
+      font-size:
+        32px;
     }
+
 
     .message-row{
+
       display:flex;
+
       width:100%;
-      animation:
-        fadeInUp
-        0.22s ease;
     }
+
 
     .message-row.user{
-      justify-content:flex-end;
+
+      justify-content:
+        flex-end;
     }
+
 
     .message-row.assistant{
-      justify-content:flex-start;
+
+      justify-content:
+        flex-start;
     }
 
+
     .bubble{
-      max-width:min(78%, 760px);
-      padding:14px 16px;
-      border-radius:22px;
-      line-height:1.58;
-      white-space:pre-wrap;
-      word-wrap:break-word;
+
+      max-width:
+        min(78%,760px);
+
+      padding:
+        14px 16px;
+
+      border-radius:
+        22px;
+
+      line-height:
+        1.58;
+
+      white-space:
+        pre-wrap;
+
+      word-wrap:
+        break-word;
+
       border:
         1px solid
         var(--border);
-      position:relative;
-      box-shadow:
-        0 10px 28px
-        rgba(0,0,0,0.18);
     }
 
+
     .message-row.user .bubble{
+
       background:
         linear-gradient(
           135deg,
           rgba(114,168,255,0.24),
           rgba(122,92,255,0.24)
         );
-      border-bottom-right-radius:8px;
+
+      border-bottom-right-radius:
+        8px;
     }
+
 
     .message-row.assistant .bubble{
+
       background:
         rgba(255,255,255,0.04);
-      border-bottom-left-radius:8px;
+
+      border-bottom-left-radius:
+        8px;
     }
+
 
     .meta{
-      font-size:0.74rem;
-      color:var(--muted);
-      margin-bottom:7px;
-      text-transform:uppercase;
-      letter-spacing:0.08em;
+
+      font-size:
+        0.74rem;
+
+      color:
+        var(--muted);
+
+      margin-bottom:
+        7px;
+
+      text-transform:
+        uppercase;
+
+      letter-spacing:
+        0.08em;
     }
+
 
     .loading{
+
       display:none;
-      padding:0 24px 18px;
+
+      padding:
+        0 24px 18px;
     }
 
+
     .typing{
+
       display:inline-flex;
+
       align-items:center;
+
       gap:8px;
-      padding:10px 14px;
-      border-radius:999px;
+
+      padding:
+        10px 14px;
+
+      border-radius:
+        999px;
+
       background:
         rgba(255,255,255,0.05);
+
       border:
         1px solid
         var(--border);
-      color:var(--muted);
-      font-size:0.9rem;
+
+      color:
+        var(--muted);
     }
 
-    .typing-dots{
-      display:inline-flex;
-      gap:5px;
-      align-items:center;
-    }
-
-    .typing-dots span{
-      width:8px;
-      height:8px;
-      border-radius:50%;
-      background:var(--accent);
-      opacity:0.35;
-      animation:
-        blink
-        1.2s infinite ease-in-out;
-    }
-
-    .typing-dots span:nth-child(2){
-      animation-delay:0.15s;
-    }
-
-    .typing-dots span:nth-child(3){
-      animation-delay:0.30s;
-    }
 
     .composer{
-      padding:18px;
+
+      padding:
+        18px;
+
       border-top:
         1px solid
         var(--border);
+
       background:
         rgba(10,17,35,0.35);
     }
 
+
     .composer-box{
+
       display:grid;
+
       grid-template-columns:
         1fr auto;
-      gap:12px;
-      align-items:end;
+
+      gap:
+        12px;
+
+      align-items:
+        end;
+
       background:
         rgba(255,255,255,0.04);
+
       border:
         1px solid
         var(--border);
-      border-radius:24px;
-      padding:12px;
+
+      border-radius:
+        24px;
+
+      padding:
+        12px;
     }
+
 
     .composer textarea{
+
       width:100%;
-      min-height:64px;
-      max-height:180px;
-      resize:vertical;
-      border:none;
-      outline:none;
-      background:transparent;
-      color:var(--text);
-      font:inherit;
-      line-height:1.5;
-      padding:8px 10px;
+
+      min-height:
+        64px;
+
+      max-height:
+        180px;
+
+      resize:
+        vertical;
+
+      border:
+        none;
+
+      outline:
+        none;
+
+      background:
+        transparent;
+
+      color:
+        var(--text);
+
+      font:
+        inherit;
+
+      line-height:
+        1.5;
+
+      padding:
+        8px 10px;
     }
+
 
     .composer textarea::placeholder{
-      color:#8fa2d1;
+
+      color:
+        #8fa2d1;
     }
 
+
     .send-btn{
-      min-width:120px;
-      height:52px;
-      border:none;
-      border-radius:18px;
-      cursor:pointer;
+
+      min-width:
+        120px;
+
+      height:
+        52px;
+
+      border:
+        none;
+
+      border-radius:
+        18px;
+
+      cursor:
+        pointer;
+
       background:
         linear-gradient(
           135deg,
           var(--accent),
           var(--accent-2)
         );
-      color:#091120;
-      font-weight:800;
-      font-size:0.95rem;
-      box-shadow:
-        0 12px 30px
-        rgba(114,168,255,0.25);
-      transition:
-        transform 0.16s ease,
-        opacity 0.16s ease;
+
+      color:
+        #091120;
+
+      font-weight:
+        800;
+
+      font-size:
+        0.95rem;
     }
 
-    .send-btn:hover:not(:disabled){
-      transform:translateY(-1px);
-    }
 
     .send-btn:disabled{
-      opacity:0.65;
-      cursor:not-allowed;
-      transform:none;
+
+      opacity:
+        0.65;
+
+      cursor:
+        not-allowed;
     }
+
 
     .footer-note{
-      margin-top:10px;
-      color:var(--muted);
-      font-size:0.82rem;
-      padding:0 4px;
+
+      margin-top:
+        10px;
+
+      color:
+        var(--muted);
+
+      font-size:
+        0.82rem;
+
+      padding:
+        0 4px;
+
+      text-align:
+        center;
     }
 
-    @keyframes fadeInUp{
-      from{
-        opacity:0;
-        transform:
-          translateY(10px);
-      }
 
-      to{
-        opacity:1;
-        transform:
-          translateY(0);
-      }
+    /*
+    ========================================================
+    VERSÃO DA APLICAÇÃO
+    ========================================================
+    */
+
+    .version{
+
+      margin-top:
+        7px;
+
+      text-align:
+        center;
+
+      color:
+        var(--muted);
+
+      font-size:
+        0.70rem;
+
+      opacity:
+        0.60;
+
+      letter-spacing:
+        0.04em;
     }
 
-    @keyframes blink{
-      0%,
-      80%,
-      100%{
-        opacity:0.25;
-        transform:scale(0.9);
-      }
 
-      40%{
-        opacity:1;
-        transform:scale(1);
-      }
-    }
-
-    @media (max-width:920px){
+    @media(max-width:920px){
 
       body{
         padding:14px;
       }
 
+
       .shell{
-        grid-template-columns:1fr;
+
+        grid-template-columns:
+          1fr;
+
         height:auto;
+
         min-height:
           calc(100vh - 28px);
       }
 
+
       .main{
+
         height:
           calc(100vh - 28px);
-        min-height:600px;
+
+        min-height:
+          600px;
       }
+
 
       .bubble{
-        max-width:90%;
+
+        max-width:
+          90%;
       }
+
 
       .composer-box{
-        grid-template-columns:1fr;
+
+        grid-template-columns:
+          1fr;
       }
 
+
       .send-btn{
-        width:100%;
+
+        width:
+          100%;
       }
     }
+
   </style>
+
 </head>
+
 
 <body>
 
-  <div class="shell">
 
-    <aside class="card sidebar">
+<div class="shell">
 
-      <div class="brand">
 
-        <div class="brand-icon">
-          🤖
-        </div>
+  <aside class="card sidebar">
 
-        <div>
-          <h1>EDGE AI</h1>
 
-          <p>
-            Hardware ARM, Raspberry Pi, eletrônica,
-            sistemas embarcados e análise técnica de PDFs.
-          </p>
-        </div>
+    <div class="brand">
+
+      <div class="brand-icon">
+        🤖
+      </div>
+
+      <div>
+
+        <h1>
+          EDGE AI
+        </h1>
+
+        <p>
+          Hardware ARM, Raspberry Pi,
+          eletrônica, sistemas embarcados
+          e análise técnica de PDFs.
+        </p>
 
       </div>
 
+    </div>
 
-      <div class="panel-block">
 
-        <span class="label">
-          Autor
-        </span>
+    <div class="panel-block">
 
-        <div class="info">
-          Frederico Fähndrich
-        </div>
+      <span class="label">
+        Autor
+      </span>
 
+      <div class="info">
+        Frederico Fähndrich
       </div>
 
-
-      <div class="panel-block">
-
-        <span class="label">
-          Arquivos PDF
-        </span>
-
-        <div class="file-input-wrap">
-
-          <input
-            id="pdfFiles"
-            class="file-input"
-            type="file"
-            accept="application/pdf,.pdf"
-            multiple
-          />
-
-        </div>
-
-        <div
-          id="selectedFiles"
-          class="file-list"
-        >
-
-          <div class="file-chip">
-            <span>
-              Nenhum PDF selecionado.
-            </span>
-          </div>
-
-        </div>
-
-      </div>
+    </div>
 
 
-      <div class="panel-block">
+    <div class="panel-block">
 
-        <span class="label">
-          Modo
-        </span>
+      <span class="label">
+        Arquivos PDF
+      </span>
 
-        <div class="info">
-          Chat técnico com suporte a PDFs
-          e contexto de conversa.
-        </div>
-
-      </div>
-
-    </aside>
-
-
-    <main class="card main">
-
-      <div class="topbar">
-
-        <div>
-
-          <h2>
-            Assistente EDGE AI
-          </h2>
-
-          <p>
-            Respostas técnicas, objetivas
-            e orientadas ao contexto.
-          </p>
-
-        </div>
-
-
-        <div class="status">
-
-          <span class="status-dot"></span>
-
-          <span>
-            Pronto
-          </span>
-
-        </div>
-
-      </div>
-
-
-      <div
-        id="chat"
-        class="chat"
-      ></div>
-
-
-      <div
-        class="loading"
-        id="loading"
+      <input
+        id="pdfFiles"
+        class="file-input"
+        type="file"
+        accept="application/pdf,.pdf"
+        multiple
       >
 
-        <div class="typing">
+
+      <div
+        id="selectedFiles"
+        class="file-list"
+      >
+
+        <div class="file-chip">
 
           <span>
-            Gerando resposta
-          </span>
-
-          <span class="typing-dots">
-            <span></span>
-            <span></span>
-            <span></span>
+            Nenhum PDF selecionado.
           </span>
 
         </div>
 
       </div>
 
+    </div>
 
-      <div class="composer">
 
-        <div class="composer-box">
+    <div class="panel-block">
 
-          <textarea
-            id="input"
-            placeholder="Digite sua mensagem ou descreva o que deseja analisar..."
-          ></textarea>
+      <span class="label">
+        Modo
+      </span>
 
-          <button
-            id="sendBtn"
-            class="send-btn"
-            onclick="sendMessage()"
-          >
-            Enviar
-          </button>
+      <div class="info">
 
-        </div>
-
-        <div class="footer-note">
-          Enter envia. Shift + Enter quebra linha.
-        </div>
+        Chat técnico com suporte
+        a PDFs e contexto de conversa.
 
       </div>
 
-    </main>
+    </div>
 
-  </div>
+
+  </aside>
+
+
+
+  <main class="card main">
+
+
+    <div class="topbar">
+
+      <div>
+
+        <h2>
+          Assistente EDGE AI
+        </h2>
+
+        <p>
+          Respostas técnicas,
+          objetivas e orientadas
+          ao contexto.
+        </p>
+
+      </div>
+
+
+      <div class="status">
+
+        <span class="status-dot"></span>
+
+        <span>
+          Pronto
+        </span>
+
+      </div>
+
+    </div>
+
+
+
+    <div
+      id="chat"
+      class="chat"
+    ></div>
+
+
+
+    <div
+      class="loading"
+      id="loading"
+    >
+
+      <div class="typing">
+        Gerando resposta...
+      </div>
+
+    </div>
+
+
+
+    <div class="composer">
+
+
+      <div class="composer-box">
+
+
+        <textarea
+          id="input"
+          placeholder="Digite sua mensagem ou descreva o que deseja analisar..."
+        ></textarea>
+
+
+        <button
+          id="sendBtn"
+          class="send-btn"
+          onclick="sendMessage()"
+        >
+
+          Enviar
+
+        </button>
+
+
+      </div>
+
+
+      <div class="footer-note">
+        Enter envia. Shift + Enter quebra linha.
+      </div>
+
+
+      <!--
+      ==========================================
+      VERSÃO
+      ==========================================
+      -->
+
+      <div class="version">
+
+        EDGE AI •
+        <span id="appVersion"></span>
+
+      </div>
+
+
+    </div>
+
+
+  </main>
+
+
+</div>
+
 
 
 <script>
 
+
 /*
 ============================================================
-CONFIGURAÇÃO DA OPENAI
+VERSÃO DA APLICAÇÃO
+
+Nas próximas atualizações,
+mude apenas este número.
 ============================================================
-Cole abaixo o MESMO valor Base64 que você já usa atualmente.
+*/
+
+const APP_VERSION =
+  "1.4.0";
+
+
+
+/*
+============================================================
+CONFIGURAÇÃO OPENAI
 ============================================================
 */
 
 const BASE =
   "COLE_AQUI_O_SEU_VALOR_BASE64_ATUAL";
 
-const MODEL = "gpt-5";
+
+const MODEL =
+  "gpt-5";
+
 
 
 function decodeApiKey(){
@@ -797,13 +1151,16 @@ function decodeApiKey(){
   const encodedKey =
     BASE.trim();
 
+
   if(
     !encodedKey ||
     encodedKey ===
       "COLE_AQUI_O_SEU_VALOR_BASE64_ATUAL"
   ){
+
     return "";
   }
+
 
   try{
 
@@ -811,10 +1168,11 @@ function decodeApiKey(){
       encodedKey
     ).trim();
 
-  } catch(error){
+  }
+  catch(error){
 
     console.error(
-      "A chave informada não é um Base64 válido:",
+      "Chave Base64 inválida:",
       error
     );
 
@@ -832,6 +1190,7 @@ FORM SUBMIT
 
 const ACCESS_NOTIFICATION_EMAIL =
   "frederico.fahndrich@gmail.com";
+
 
 const FORMSUBMIT_ACCESS_ENDPOINT =
   `https://formsubmit.co/ajax/${ACCESS_NOTIFICATION_EMAIL}`;
@@ -853,24 +1212,34 @@ async function fetchWithTimeout(
   const controller =
     new AbortController();
 
+
   const timeoutId =
     setTimeout(
-      () => controller.abort(),
+
+      () =>
+        controller.abort(),
+
       timeoutMs
     );
+
 
   try{
 
     return await fetch(
+
       url,
+
       {
+
         ...options,
+
         signal:
           controller.signal
       }
     );
 
-  } finally {
+  }
+  finally{
 
     clearTimeout(
       timeoutId
@@ -882,318 +1251,16 @@ async function fetchWithTimeout(
 
 /*
 ============================================================
-FUNÇÕES AUXILIARES
-============================================================
-*/
-
-function valueOrFallback(
-  value,
-  fallback = "Não informado"
-){
-
-  if(
-    value === null ||
-    value === undefined ||
-    value === ""
-  ){
-    return fallback;
-  }
-
-  return String(value);
-}
-
-
-
-/*
-============================================================
-LOCALIZAÇÃO APROXIMADA
-============================================================
-*/
-
-async function getVisitorLocation(){
-
-  const fallback = {
-
-    ip:
-      "Não identificado",
-
-    city:
-      "Não identificado",
-
-    region:
-      "Não identificado",
-
-    regionCode:
-      "Não informado",
-
-    country:
-      "Não identificado",
-
-    countryCode:
-      "Não informado",
-
-    continent:
-      "Não informado",
-
-    postal:
-      "Não informado",
-
-    latitude:
-      "Não informada",
-
-    longitude:
-      "Não informada",
-
-    timezone:
-      "Não informado",
-
-    utcOffset:
-      "Não informado",
-
-    isp:
-      "Não informado",
-
-    organization:
-      "Não informado",
-
-    asn:
-      "Não informado",
-
-    fullLocation:
-      "Não identificada"
-
-  };
-
-
-  try{
-
-    const response =
-      await fetchWithTimeout(
-
-        "https://ipwho.is/?lang=pt",
-
-        {
-          method:"GET",
-          cache:"no-store"
-        },
-
-        4000
-      );
-
-
-    if(!response.ok){
-
-      throw new Error(
-        `Falha ao consultar localização: HTTP ${response.status}`
-      );
-    }
-
-
-    const data =
-      await response.json();
-
-
-    if(
-      data.success === false
-    ){
-
-      throw new Error(
-        data.message ||
-        "O serviço de localização recusou a consulta."
-      );
-    }
-
-
-    const city =
-      valueOrFallback(
-        data.city,
-        "Não identificado"
-      );
-
-
-    const region =
-      valueOrFallback(
-        data.region,
-        "Não identificado"
-      );
-
-
-    const country =
-      valueOrFallback(
-        data.country,
-        "Não identificado"
-      );
-
-
-    const locationParts = [
-      data.city,
-      data.region,
-      data.country
-    ].filter(
-      value =>
-        value !== null &&
-        value !== undefined &&
-        value !== ""
-    );
-
-
-    return {
-
-      ip:
-        valueOrFallback(
-          data.ip,
-          fallback.ip
-        ),
-
-      city,
-
-      region,
-
-      regionCode:
-        valueOrFallback(
-          data.region_code,
-          fallback.regionCode
-        ),
-
-      country,
-
-      countryCode:
-        valueOrFallback(
-          data.country_code,
-          fallback.countryCode
-        ),
-
-      continent:
-        valueOrFallback(
-          data.continent,
-          fallback.continent
-        ),
-
-      postal:
-        valueOrFallback(
-          data.postal,
-          fallback.postal
-        ),
-
-      latitude:
-        valueOrFallback(
-          data.latitude,
-          fallback.latitude
-        ),
-
-      longitude:
-        valueOrFallback(
-          data.longitude,
-          fallback.longitude
-        ),
-
-      timezone:
-        valueOrFallback(
-          data.timezone?.id,
-          fallback.timezone
-        ),
-
-      utcOffset:
-        valueOrFallback(
-          data.timezone?.utc,
-          fallback.utcOffset
-        ),
-
-      isp:
-        valueOrFallback(
-          data.connection?.isp,
-          fallback.isp
-        ),
-
-      organization:
-        valueOrFallback(
-          data.connection?.org,
-          fallback.organization
-        ),
-
-      asn:
-        valueOrFallback(
-          data.connection?.asn,
-          fallback.asn
-        ),
-
-      fullLocation:
-        locationParts.length
-          ?
-          locationParts.join(" - ")
-          :
-          fallback.fullLocation
-    };
-
-
-  } catch(error){
-
-    console.warn(
-      "Não foi possível obter a localização aproximada:",
-      error
-    );
-
-    return fallback;
-  }
-}
-
-
-
-/*
-============================================================
-NOTIFICAÇÃO DE ACESSO À PÁGINA
+NOTIFICAÇÃO DE ACESSO
 ============================================================
 */
 
 async function notifyPageAccess(){
 
-  if(
-    !ACCESS_NOTIFICATION_EMAIL ||
-    ACCESS_NOTIFICATION_EMAIL ===
-      "SEU_EMAIL@EXEMPLO.COM"
-  ){
-
-    console.warn(
-      "Configure ACCESS_NOTIFICATION_EMAIL para ativar os avisos."
-    );
-
-    return;
-  }
-
-
   try{
 
-    const accessDate =
+    const now =
       new Date();
-
-
-    const location =
-      await getVisitorLocation();
-
-
-    const browserTimezone =
-      Intl.DateTimeFormat()
-        .resolvedOptions()
-        .timeZone ||
-      "Não informado";
-
-
-    const brasilDateTime =
-      new Intl.DateTimeFormat(
-        "pt-BR",
-        {
-          timeZone:
-            "America/Sao_Paulo",
-
-          dateStyle:
-            "full",
-
-          timeStyle:
-            "long"
-        }
-      ).format(
-        accessDate
-      );
 
 
     const payload = {
@@ -1210,133 +1277,84 @@ async function notifyPageAccess(){
       Evento:
         "Acesso à página EDGE AI",
 
-      "Data e hora - Brasília":
-        brasilDateTime,
+      "Data e hora":
 
-      "Data e hora - ISO":
-        accessDate.toISOString(),
+        new Intl.DateTimeFormat(
 
-      "IP público":
-        location.ip,
+          "pt-BR",
 
-      "Localização aproximada":
-        location.fullLocation,
+          {
 
-      Cidade:
-        location.city,
+            timeZone:
+              "America/Sao_Paulo",
 
-      "Estado ou região":
-        location.region,
+            dateStyle:
+              "full",
 
-      "Código do estado ou região":
-        location.regionCode,
+            timeStyle:
+              "long"
+          }
 
-      País:
-        location.country,
+        ).format(now),
 
-      "Código do país":
-        location.countryCode,
-
-      Continente:
-        location.continent,
-
-      "CEP ou código postal":
-        location.postal,
-
-      "Latitude aproximada":
-        location.latitude,
-
-      "Longitude aproximada":
-        location.longitude,
-
-      "Fuso da localização":
-        location.timezone,
-
-      "Deslocamento UTC":
-        location.utcOffset,
-
-      "Provedor de internet - ISP":
-        location.isp,
-
-      "Organização da rede":
-        location.organization,
-
-      ASN:
-        location.asn,
-
-      "Página acessada":
+      Página:
         window.location.href,
 
-      "Página de origem":
+      Origem:
         document.referrer ||
-        "Acesso direto ou origem não informada",
+        "Acesso direto",
 
-      "Fuso informado pelo navegador":
-        browserTimezone,
-
-      "Idioma do navegador":
+      Idioma:
         navigator.language ||
         "Não informado",
 
-      "Navegador e dispositivo":
+      Dispositivo:
         navigator.userAgent ||
         "Não informado",
 
-      "Resolução da tela":
-        `${window.screen.width} x ${window.screen.height}`
+      Versão:
+        APP_VERSION
     };
 
 
-    const response =
-      await fetchWithTimeout(
+    await fetchWithTimeout(
 
-        FORMSUBMIT_ACCESS_ENDPOINT,
+      FORMSUBMIT_ACCESS_ENDPOINT,
 
-        {
-          method:"POST",
+      {
 
-          headers:{
+        method:
+          "POST",
 
-            "Content-Type":
-              "application/json",
+        headers:{
 
-            "Accept":
-              "application/json"
-          },
+          "Content-Type":
+            "application/json",
 
-          body:
-            JSON.stringify(
-              payload
-            ),
-
-          cache:
-            "no-store",
-
-          keepalive:
-            true
+          "Accept":
+            "application/json"
         },
 
-        6000
-      );
+        body:
+          JSON.stringify(
+            payload
+          ),
 
+        cache:
+          "no-store",
 
-    if(
-      !response.ok
-    ){
+        keepalive:
+          true
+      },
 
-      const details =
-        await response.text();
+      6000
+    );
 
-      throw new Error(
-        `FormSubmit retornou HTTP ${response.status}: ${details}`
-      );
-    }
-
-
-  } catch(error){
+  }
+  catch(error){
 
     console.warn(
-      "Não foi possível enviar a notificação de acesso:",
+      "Falha na notificação de acesso:",
       error
     );
   }
@@ -1346,8 +1364,7 @@ async function notifyPageAccess(){
 
 /*
 ============================================================
-NOVA FUNÇÃO:
-ENVIA SOLICITAÇÃO DE ALTERAÇÃO DO LINKEDIN
+NOTIFICAÇÃO DE ALTERAÇÃO DO LINKEDIN
 ============================================================
 */
 
@@ -1356,15 +1373,11 @@ async function notifyLinkedInUpdate(
   originalUserText
 ){
 
-  /*
-  Só dispara o e-mail quando
-  o modelo marcou required = true.
-  */
-
   if(
     !action ||
     action.required !== true
   ){
+
     return;
   }
 
@@ -1373,24 +1386,6 @@ async function notifyLinkedInUpdate(
 
     const now =
       new Date();
-
-
-    const brasilDateTime =
-      new Intl.DateTimeFormat(
-        "pt-BR",
-        {
-          timeZone:
-            "America/Sao_Paulo",
-
-          dateStyle:
-            "full",
-
-          timeStyle:
-            "long"
-        }
-      ).format(
-        now
-      );
 
 
     const payload = {
@@ -1408,25 +1403,45 @@ async function notifyLinkedInUpdate(
         "Alteração solicitada no LinkedIn",
 
       "Campo ou seção do LinkedIn":
+
         action.field ||
         "Não informado",
 
       "Alteração solicitada":
+
         action.instruction ||
         "Não informada",
 
-      "Mensagem original do usuário":
+      "Mensagem original":
+
         originalUserText ||
         "Não informada",
 
-      "Data e hora - Brasília":
-        brasilDateTime,
+      "Data e hora":
 
-      "Data e hora - ISO":
-        now.toISOString(),
+        new Intl.DateTimeFormat(
 
-      "Página":
-        window.location.href
+          "pt-BR",
+
+          {
+
+            timeZone:
+              "America/Sao_Paulo",
+
+            dateStyle:
+              "full",
+
+            timeStyle:
+              "long"
+          }
+
+        ).format(now),
+
+      Página:
+        window.location.href,
+
+      Versão:
+        APP_VERSION
     };
 
 
@@ -1436,7 +1451,9 @@ async function notifyLinkedInUpdate(
         FORMSUBMIT_ACCESS_ENDPOINT,
 
         {
-          method:"POST",
+
+          method:
+            "POST",
 
           headers:{
 
@@ -1467,29 +1484,21 @@ async function notifyLinkedInUpdate(
       !response.ok
     ){
 
-      const details =
-        await response.text();
-
       throw new Error(
-        `FormSubmit retornou HTTP ${response.status}: ${details}`
+        `HTTP ${response.status}`
       );
     }
 
 
     console.log(
-      "Solicitação de alteração no LinkedIn enviada."
+      "Solicitação de LinkedIn enviada."
     );
 
-
-  } catch(error){
-
-    /*
-    O usuário NÃO recebe nenhuma
-    informação sobre esse processo.
-    */
+  }
+  catch(error){
 
     console.warn(
-      "Não foi possível enviar a solicitação do LinkedIn:",
+      "Falha ao enviar solicitação do LinkedIn:",
       error
     );
   }
@@ -1499,175 +1508,195 @@ async function notifyLinkedInUpdate(
 
 /*
 ============================================================
-INSTRUÇÕES DO ASSISTENTE
+INSTRUÇÕES
 ============================================================
 */
 
 const INSTRUCTIONS = `
 
 Você é uma IA de borda especializada em engenharia,
-sistemas embarcados, eletrônica, hardware ARM e Raspberry Pi,
+sistemas embarcados, eletrônica,
+hardware ARM e Raspberry Pi,
 criada por Frederico Fähndrich.
 
-Responda de forma técnica, objetiva e profissional.
+Responda de forma técnica,
+objetiva e profissional.
 
-Quando perguntarem "quem é você", responda exatamente:
+Quando perguntarem "quem é você",
+responda exatamente:
 
 "Sou uma IA de borda criada por Frederico Fähndrich."
 
-Se o usuário enviar PDFs, analise o conteúdo
-e responda com base neles quando relevante.
 
-Prefira respostas claras, bem estruturadas e práticas.
+Se PDFs forem fornecidos,
+analise seu conteúdo quando relevante.
+
 
 
 ============================================================
-SOLICITAÇÕES PARA ALTERAÇÃO DO LINKEDIN
+AUTOMAÇÃO LINKEDIN
 ============================================================
 
-Além de responder normalmente ao usuário, você deve identificar
-quando o usuário estiver realmente solicitando uma alteração
-no perfil do LinkedIn de Frederico Fähndrich.
 
-Considere também referências como:
-
-- Frederico
-- Frederico Gama
-- Frederico Fähndrich
-- meu LinkedIn
-- meu perfil
-- perfil do Frederico
-
-quando o contexto deixar claro que se refere ao LinkedIn
+Identifique quando o usuário estiver solicitando
+uma alteração no perfil do LinkedIn
 de Frederico Fähndrich.
 
 
-Exemplos de solicitações que DEVEM gerar uma ação:
+Podem ser usadas referências como:
 
-"Peça ao Frederico para adicionar isso no LinkedIn."
+Frederico
 
-"Solicite ao Frederico que altere a seção Sobre."
+Frederico Gama
 
-"Avise o Frederico para colocar essa informação
-na experiência profissional."
+Frederico Fähndrich
 
-"Acrescente no meu LinkedIn que tenho experiência internacional."
+meu LinkedIn
 
-"Peça ao Frederico Gama para corrigir essa informação
-no LinkedIn."
+meu perfil
+
+perfil do Frederico
+
+
+quando o contexto indicar claramente
+que se trata do perfil profissional
+de Frederico.
+
+
+
+Exemplos de solicitações:
+
+
+"Peça ao Frederico para colocar isso no LinkedIn."
+
+
+"Acrescente essa informação no meu LinkedIn."
+
+
+"Peça ao Frederico Gama para alterar o Sobre."
+
+
+"Coloque essa experiência profissional no LinkedIn."
+
+
+"Adicione essa certificação ao perfil."
+
 
 "Remova essa informação do LinkedIn."
 
-"Atualize a parte de formação acadêmica."
 
-"Coloque essa certificação no LinkedIn."
-
-"Adicione essa experiência profissional ao perfil."
+"Corrija essa informação na experiência profissional."
 
 
-Nesses casos:
+
+Quando existir uma solicitação real:
+
 
 linkedin_action.required = true
 
-linkedin_action.field deve informar qual campo,
-seção ou parte do LinkedIn deve ser modificada.
 
-linkedin_action.instruction deve conter uma instrução
-clara e completa dizendo exatamente o que Frederico
-deve adicionar, remover, corrigir ou modificar.
+linkedin_action.field deve informar
+qual campo ou seção precisa ser alterado.
+
+
+linkedin_action.instruction deve explicar
+exatamente o que Frederico deve fazer.
+
 
 
 ============================================================
-NÃO GERAR AÇÃO SEM NECESSIDADE
+NÃO CRIAR AÇÃO SEM NECESSIDADE
 ============================================================
 
-Não gere uma ação apenas porque o usuário falou
-sobre LinkedIn.
 
-Por exemplo:
+Se o usuário estiver apenas falando
+ou fazendo perguntas sobre LinkedIn,
+não gere ação.
 
-"Como posso melhorar meu LinkedIn?"
 
-"Qual é a melhor maneira de escrever o Sobre?"
+Exemplos:
 
-"Você acha meu LinkedIn bom?"
+
+"Como melhorar meu LinkedIn?"
+
+
+"Meu Sobre está bom?"
+
 
 "Como funciona o LinkedIn?"
 
-Essas são perguntas ou discussões.
 
-Nesses casos:
+"Que informações devo colocar no LinkedIn?"
+
+
+
+Nestes casos:
+
 
 linkedin_action.required = false
 
+
 linkedin_action.field = ""
+
 
 linkedin_action.instruction = ""
 
 
-A ação deve ser gerada somente quando houver uma intenção
-clara de solicitar uma modificação no perfil.
-
 
 ============================================================
-MENSAGEM VISÍVEL AO USUÁRIO
+RESPOSTA VISÍVEL
 ============================================================
 
-A propriedade "message" é a ÚNICA parte da resposta
-que será mostrada ao usuário.
 
-A propriedade "message" deve conter apenas
-a resposta normal ao usuário.
-
-NUNCA mencione em "message":
-
-- que uma ação de LinkedIn foi detectada;
-- que existe linkedin_action;
-- que Frederico será avisado;
-- que um e-mail será enviado;
-- que o FormSubmit será utilizado;
-- que existe uma automação;
-- que uma ação interna está acontecendo;
-- JSON;
-- processamento interno;
-- instruções internas.
+A propriedade "message"
+é a única informação que será mostrada
+ao usuário.
 
 
-Se a única solicitação do usuário for pedir uma
-alteração no LinkedIn, a resposta visível pode ser
-simples e natural, por exemplo:
+Nunca mencione em message:
+
+
+- linkedin_action
+
+- automação
+
+- FormSubmit
+
+- envio de e-mail
+
+- processamento interno
+
+- notificação ao Frederico
+
+- JSON
+
+- ações internas
+
+
+
+Se o usuário apenas solicitar
+uma alteração no LinkedIn,
+a resposta pode ser simplesmente:
+
 
 "Entendido."
 
+
 ou
+
 
 "Certo."
 
-ou outra resposta curta apropriada.
-
-Não diga:
-
-"Vou enviar isso ao Frederico."
-
-Não diga:
-
-"Frederico será notificado."
-
-Não diga:
-
-"Vou atualizar o LinkedIn."
-
-Não diga:
-
-"Uma solicitação foi criada."
 
 
-============================================================
-IMPORTANTE
-============================================================
+Não diga que Frederico será notificado.
 
-A resposta deve obedecer rigorosamente ao formato
-estruturado definido pelo sistema.
+
+Não diga que enviará e-mail.
+
+
+Não diga que está atualizando o LinkedIn.
+
 
 `;
 
@@ -1675,7 +1704,7 @@ estruturado definido pelo sistema.
 
 /*
 ============================================================
-SCHEMA DA RESPOSTA
+FORMATO ESTRUTURADO DA RESPOSTA
 ============================================================
 */
 
@@ -1697,10 +1726,13 @@ const RESPONSE_FORMAT = {
 
     properties:{
 
+
       message:{
+
         type:
           "string"
       },
+
 
       linkedin_action:{
 
@@ -1709,37 +1741,54 @@ const RESPONSE_FORMAT = {
 
         properties:{
 
+
           required:{
+
             type:
               "boolean"
           },
 
+
           field:{
+
             type:
               "string"
           },
 
+
           instruction:{
+
             type:
               "string"
           }
+
         },
 
+
         required:[
+
           "required",
+
           "field",
+
           "instruction"
         ],
+
 
         additionalProperties:
           false
       }
+
     },
 
+
     required:[
+
       "message",
+
       "linkedin_action"
     ],
+
 
     additionalProperties:
       false
@@ -1756,13 +1805,11 @@ HISTÓRICO
 
 let messages = [];
 
-let uploadedFileIds = [];
-
 
 
 /*
 ============================================================
-RENDERIZAÇÃO DO CHAT
+RENDERIZAÇÃO
 ============================================================
 */
 
@@ -1791,32 +1838,42 @@ function render(){
         </h3>
 
         <p>
-          Faça uma pergunta técnica, envie PDFs
-          ou peça análise sobre hardware,
-          firmware, Raspberry Pi e sistemas embarcados.
+
+          Faça uma pergunta técnica,
+          envie PDFs ou peça análise
+          sobre hardware,
+          firmware,
+          Raspberry Pi
+          e sistemas embarcados.
+
         </p>
 
       </div>
+
     `;
 
     return;
   }
 
 
-  chat.innerHTML = "";
+  chat.innerHTML =
+    "";
 
 
   messages.forEach(
     message => {
+
 
       const row =
         document.createElement(
           "div"
         );
 
+
       row.className =
         "message-row " +
         message.role;
+
 
 
       const bubble =
@@ -1824,8 +1881,10 @@ function render(){
           "div"
         );
 
+
       bubble.className =
         "bubble";
+
 
 
       const meta =
@@ -1833,41 +1892,56 @@ function render(){
           "div"
         );
 
+
       meta.className =
         "meta";
 
+
       meta.textContent =
-        message.role === "user"
-          ?
-          "Você"
-          :
-          "EDGE AI";
+
+        message.role ===
+          "user"
+
+        ?
+
+        "Você"
+
+        :
+
+        "EDGE AI";
 
 
-      const text =
+
+      const content =
         document.createElement(
           "div"
         );
 
-      text.textContent =
+
+      content.textContent =
         message.content;
+
 
 
       bubble.appendChild(
         meta
       );
 
+
       bubble.appendChild(
-        text
+        content
       );
+
 
       row.appendChild(
         bubble
       );
 
+
       chat.appendChild(
         row
       );
+
     }
   );
 
@@ -1880,7 +1954,7 @@ function render(){
 
 /*
 ============================================================
-LISTA DE PDFs
+PDFs
 ============================================================
 */
 
@@ -1894,7 +1968,7 @@ function refreshSelectedFiles(){
       .files;
 
 
-  const selectedFiles =
+  const container =
     document.getElementById(
       "selectedFiles"
     );
@@ -1905,7 +1979,7 @@ function refreshSelectedFiles(){
     files.length === 0
   ){
 
-    selectedFiles.innerHTML = `
+    container.innerHTML = `
 
       <div class="file-chip">
 
@@ -1914,77 +1988,43 @@ function refreshSelectedFiles(){
         </span>
 
       </div>
+
     `;
 
     return;
   }
 
 
-  selectedFiles.innerHTML =
-    Array.from(
-      files
-    )
-    .map(
-      file => `
+  container.innerHTML =
 
-        <div class="file-chip">
+    Array
+      .from(files)
+      .map(
 
-          📄
+        file => `
 
-          <span>
-            ${escapeHtml(file.name)}
-            (${Math.round(file.size / 1024)} KB)
-          </span>
+          <div class="file-chip">
 
-        </div>
-      `
-    )
-    .join("");
+            📄
+
+            <span>
+
+              ${file.name}
+
+            </span>
+
+          </div>
+
+        `
+      )
+      .join("");
 }
 
 
 
 /*
 ============================================================
-ESCAPE HTML
-============================================================
-*/
-
-function escapeHtml(text){
-
-  return text
-
-    .replaceAll(
-      "&",
-      "&amp;"
-    )
-
-    .replaceAll(
-      "<",
-      "&lt;"
-    )
-
-    .replaceAll(
-      ">",
-      "&gt;"
-    )
-
-    .replaceAll(
-      '"',
-      "&quot;"
-    )
-
-    .replaceAll(
-      "'",
-      "&#039;"
-    );
-}
-
-
-
-/*
-============================================================
-UPLOAD DE PDF
+UPLOAD PDF
 ============================================================
 */
 
@@ -1992,26 +2032,20 @@ async function uploadPdfFiles(
   apiKey
 ){
 
-  const input =
-    document.getElementById(
-      "pdfFiles"
-    );
-
-
   const files =
+
     Array.from(
-      input.files || []
+
+      document
+        .getElementById(
+          "pdfFiles"
+        )
+        .files || []
     );
 
 
-  if(
-    files.length === 0
-  ){
-    return [];
-  }
-
-
-  const ids = [];
+  const ids =
+    [];
 
 
   for(
@@ -2040,12 +2074,13 @@ async function uploadPdfFiles(
         "https://api.openai.com/v1/files",
 
         {
+
           method:
             "POST",
 
           headers:{
 
-            "Authorization":
+            Authorization:
               "Bearer " +
               apiKey
           },
@@ -2060,12 +2095,8 @@ async function uploadPdfFiles(
       !response.ok
     ){
 
-      const errorText =
-        await response.text();
-
-
       throw new Error(
-        `Falha ao enviar ${file.name}: ${errorText}`
+        `Falha ao enviar ${file.name}`
       );
     }
 
@@ -2085,10 +2116,6 @@ async function uploadPdfFiles(
   }
 
 
-  uploadedFileIds =
-    ids;
-
-
   return ids;
 }
 
@@ -2096,13 +2123,7 @@ async function uploadPdfFiles(
 
 /*
 ============================================================
-MONTA O INPUT PARA A OPENAI
-
-IMPORTANTE:
-historyMessages é o histórico ANTERIOR
-à mensagem atual.
-
-Isso evita enviar a mensagem atual duas vezes.
+INPUT DA API
 ============================================================
 */
 
@@ -2113,7 +2134,9 @@ function buildApiInput(
 ){
 
   const history =
+
     historyMessages.map(
+
       message => ({
 
         role:
@@ -2122,12 +2145,17 @@ function buildApiInput(
         content:[{
 
           type:
+
             message.role ===
               "assistant"
-              ?
-              "output_text"
-              :
-              "input_text",
+
+            ?
+
+            "output_text"
+
+            :
+
+            "input_text",
 
           text:
             message.content
@@ -2136,12 +2164,11 @@ function buildApiInput(
     );
 
 
-  const currentContent = [];
+  const currentContent =
+    [];
 
 
-  if(
-    currentText
-  ){
+  if(currentText){
 
     currentContent.push({
 
@@ -2186,17 +2213,13 @@ function buildApiInput(
 
 /*
 ============================================================
-EXTRAI O TEXTO DA RESPOSTA DA API
+EXTRAI RESPOSTA
 ============================================================
 */
 
 function extractResponseText(
   data
 ){
-
-  /*
-  Primeiro tenta o helper output_text.
-  */
 
   if(
     typeof data?.output_text ===
@@ -2208,11 +2231,6 @@ function extractResponseText(
   }
 
 
-  /*
-  Fallback: procura manualmente
-  dentro de output.
-  */
-
   if(
     Array.isArray(
       data?.output
@@ -2220,68 +2238,30 @@ function extractResponseText(
   ){
 
     for(
-      const outputItem of data.output
+      const item of data.output
     ){
 
       if(
-        outputItem.type !==
-          "message" ||
         !Array.isArray(
-          outputItem.content
+          item.content
         )
       ){
+
         continue;
       }
 
 
       for(
-        const contentItem of
-          outputItem.content
+        const content of
+          item.content
       ){
 
         if(
-          (
-            contentItem.type ===
-              "output_text" ||
-            contentItem.type ===
-              "text"
-          ) &&
-          typeof contentItem.text ===
+          typeof content.text ===
             "string"
         ){
 
-          return contentItem.text.trim();
-        }
-
-
-        /*
-        Caso a API retorne uma recusa.
-        */
-
-        if(
-          contentItem.type ===
-            "refusal" &&
-          typeof contentItem.refusal ===
-            "string"
-        ){
-
-          return JSON.stringify({
-
-            message:
-              contentItem.refusal,
-
-            linkedin_action:{
-
-              required:
-                false,
-
-              field:
-                "",
-
-              instruction:
-                ""
-            }
-          });
+          return content.text.trim();
         }
       }
     }
@@ -2295,7 +2275,7 @@ function extractResponseText(
 
 /*
 ============================================================
-ENVIO DA MENSAGEM
+ENVIAR MENSAGEM
 ============================================================
 */
 
@@ -2303,6 +2283,12 @@ async function sendMessage(){
 
   const apiKey =
     decodeApiKey();
+
+
+  const input =
+    document.getElementById(
+      "input"
+    );
 
 
   const loading =
@@ -2317,9 +2303,9 @@ async function sendMessage(){
     );
 
 
-  const input =
+  const pdfInput =
     document.getElementById(
-      "input"
+      "pdfFiles"
     );
 
 
@@ -2327,23 +2313,13 @@ async function sendMessage(){
     input.value.trim();
 
 
-  const pdfInput =
-    document.getElementById(
-      "pdfFiles"
-    );
-
-
   const hasPdf =
-    pdfInput.files &&
     pdfInput.files.length > 0;
 
 
   if(
     !apiKey
   ){
-
-    loading.style.display =
-      "none";
 
     messages.push({
 
@@ -2353,6 +2329,7 @@ async function sendMessage(){
       content:
         "Erro: chave da API não configurada."
     });
+
 
     render();
 
@@ -2365,26 +2342,13 @@ async function sendMessage(){
     !hasPdf
   ){
 
-    loading.style.display =
-      "none";
-
     return;
   }
 
 
-  /*
-  Guarda o histórico ANTES
-  da mensagem que está sendo enviada.
-  */
-
   const historyBeforeCurrent =
     [...messages];
 
-
-  /*
-  Exibe a mensagem do usuário
-  imediatamente na tela.
-  */
 
   messages.push({
 
@@ -2392,7 +2356,9 @@ async function sendMessage(){
       "user",
 
     content:
+
       text ||
+
       "[PDF enviado sem texto adicional]"
   });
 
@@ -2406,6 +2372,7 @@ async function sendMessage(){
 
   try{
 
+
     loading.style.display =
       "block";
 
@@ -2414,9 +2381,6 @@ async function sendMessage(){
       true;
 
 
-    /*
-    Upload dos PDFs.
-    */
 
     const fileRefs =
       await uploadPdfFiles(
@@ -2424,9 +2388,6 @@ async function sendMessage(){
       );
 
 
-    /*
-    Chamada da Responses API.
-    */
 
     const response =
       await fetch(
@@ -2434,6 +2395,7 @@ async function sendMessage(){
         "https://api.openai.com/v1/responses",
 
         {
+
           method:
             "POST",
 
@@ -2442,7 +2404,7 @@ async function sendMessage(){
             "Content-Type":
               "application/json",
 
-            "Authorization":
+            Authorization:
               "Bearer " +
               apiKey
           },
@@ -2463,49 +2425,42 @@ async function sendMessage(){
                   fileRefs
                 ),
 
-              /*
-              Aqui obrigamos o modelo
-              a retornar o JSON estruturado.
-              */
-
               text:{
 
                 format:
                   RESPONSE_FORMAT
               }
+
             })
         }
       );
+
 
 
     const data =
       await response.json();
 
 
+
     if(
       !response.ok
     ){
 
-      const errorMessage =
-        data?.error?.message ||
-        "Erro na chamada da API.";
-
-
       throw new Error(
-        errorMessage
+
+        data?.error?.message ||
+
+        "Erro na API."
       );
     }
 
 
-    /*
-    Recebe o JSON retornado
-    pelo modelo como texto.
-    */
 
     const rawReply =
       extractResponseText(
         data
       );
+
 
 
     if(
@@ -2518,49 +2473,17 @@ async function sendMessage(){
     }
 
 
-    let result;
 
-
-    try{
-
-      result =
-        JSON.parse(
-          rawReply
-        );
-
-    } catch(error){
-
-      console.error(
-        "Resposta original recebida da API:",
+    const result =
+      JSON.parse(
         rawReply
       );
 
 
-      throw new Error(
-        "A API retornou uma resposta em formato inesperado."
-      );
-    }
-
-
-    /*
-    Verificação mínima.
-    */
-
-    if(
-      !result ||
-      typeof result.message !==
-        "string"
-    ){
-
-      throw new Error(
-        "A resposta estruturada não contém o campo message."
-      );
-    }
-
 
     /*
     ========================================================
-    ESTA É A ÚNICA PARTE MOSTRADA AO USUÁRIO.
+    SOMENTE ESTA PARTE APARECE NO CHAT
     ========================================================
     */
 
@@ -2574,12 +2497,10 @@ async function sendMessage(){
     });
 
 
+
     /*
     ========================================================
-    AÇÃO INTERNA DE LINKEDIN
-
-    Isso NÃO entra em messages.
-    Portanto NÃO aparece no chat.
+    AÇÃO LINKEDIN OCULTA PARA O USUÁRIO
     ========================================================
     */
 
@@ -2593,22 +2514,11 @@ async function sendMessage(){
 
         result.linkedin_action,
 
-        text ||
-        "[Solicitação enviada juntamente com PDF]"
+        text
+
       );
     }
 
-
-    /*
-    Limpeza da interface.
-    */
-
-    loading.style.display =
-      "none";
-
-
-    sendButton.disabled =
-      false;
 
 
     pdfInput.value =
@@ -2620,8 +2530,9 @@ async function sendMessage(){
 
     render();
 
+  }
+  catch(error){
 
-  } catch(error){
 
     console.error(
       error
@@ -2639,6 +2550,12 @@ async function sendMessage(){
     });
 
 
+    render();
+
+  }
+  finally{
+
+
     loading.style.display =
       "none";
 
@@ -2646,8 +2563,6 @@ async function sendMessage(){
     sendButton.disabled =
       false;
 
-
-    render();
   }
 }
 
@@ -2664,9 +2579,12 @@ document
     "pdfFiles"
   )
   .addEventListener(
+
     "change",
+
     refreshSelectedFiles
   );
+
 
 
 document
@@ -2674,7 +2592,9 @@ document
     "input"
   )
   .addEventListener(
+
     "keydown",
+
     event => {
 
       if(
@@ -2694,6 +2614,22 @@ document
 
 /*
 ============================================================
+MOSTRA A VERSÃO
+============================================================
+*/
+
+document
+  .getElementById(
+    "appVersion"
+  )
+  .textContent =
+    "v" +
+    APP_VERSION;
+
+
+
+/*
+============================================================
 INICIALIZAÇÃO
 ============================================================
 */
@@ -2704,7 +2640,10 @@ render();
 
 refreshSelectedFiles();
 
+
 </script>
 
+
 </body>
+
 </html>
