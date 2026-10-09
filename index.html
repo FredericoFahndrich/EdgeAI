@@ -1244,7 +1244,8 @@
     .project-file-row button { flex-shrink:0; }
     .project-file-notice { font-size:.77rem; color:var(--muted); margin-top:8px; line-height:1.4; }
 
-  </style>
+  .edgeai-dialog{border:1px solid #475569;border-radius:16px;background:#111827;color:#f8fafc;width:min(440px,calc(100vw - 32px));padding:24px;box-sizing:border-box}.edgeai-dialog::backdrop{background:#0009}.edgeai-dialog label{display:block;margin:16px 0}.edgeai-dialog input{display:block;width:100%;box-sizing:border-box;padding:12px;margin-top:6px;color:#f8fafc;background:#1e293b;border:1px solid #64748b;border-radius:8px}.edgeai-dialog button{padding:10px 14px}.edgeai-dialog h2{margin-top:0}.edgeai-dialog .actions-row{justify-content:flex-end}.project-file-row{min-width:0}.project-file-row a{overflow-wrap:anywhere}.shell,.card{min-width:0}
+</style>
 
 </head>
 
@@ -1323,7 +1324,7 @@
       <div class="actions-row">
         <button class="mini-btn" id="loginBtn" type="button" onclick="loginUser()">Entrar</button>
         <button class="mini-btn" id="logoutBtn" type="button" onclick="logoutUser()" hidden>Sair</button>
-        <button class="mini-btn" type="button" onclick="editVisitorName()">Alterar nome</button>
+        <button class="mini-btn" id="editNameBtn" type="button" onclick="editVisitorName()">Alterar nome</button>
       </div>
     </div>
 
@@ -1334,7 +1335,7 @@
       </select>
       <button class="workspace-new" type="button" onclick="newChat()">+ Nova conversa</button>
       <div class="list-heading">
-        <span>Histórico</span>
+        <span>Histórico</span><button class="mini-btn" type="button" onclick="refreshWorkspace()">Atualizar conversa</button>
         <label class="archive-toggle"><input id="showArchived" type="checkbox" onchange="reloadConversationList()"> Arquivadas</label>
       </div>
       <div id="conversationList" class="conversation-list"><span class="info">Entre para consultar seu histórico privado.</span></div>
@@ -1543,7 +1544,7 @@ VERSÃO
 */
 
 const APP_VERSION =
-  "2.6.0";
+  "2.7.0";
 
 
 /*
@@ -1569,6 +1570,12 @@ identificar a conversa.
 ============================================================
 */
 
+let guestToken = localStorage.getItem("edgeai_guest_token");
+if (!/^[a-f0-9]{64}$/.test(guestToken || "")) {
+  guestToken = Array.from(crypto.getRandomValues(new Uint8Array(32)), x=>x.toString(16).padStart(2,"0")).join("");
+  localStorage.setItem("edgeai_guest_token", guestToken);
+  localStorage.setItem("edgeai_conversation_id", crypto.randomUUID());
+}
 let conversationId =
   localStorage.getItem(
     "edgeai_conversation_id"
@@ -1672,10 +1679,10 @@ function updateVisitorNameDisplay() {
     );
 
 
-  if (visitorName) {
+  if (authUser?.full_name || visitorName) {
 
     element.textContent =
-      visitorName;
+      authUser?.full_name || visitorName;
 
   } else {
 
@@ -2061,6 +2068,9 @@ async function uploadPdfFiles() {
     const file of files
   ) {
 
+    if (files.length > 10 || file.size === 0 || file.size > 15 * 1024 * 1024) {
+      throw new Error("Selecione até 10 PDFs, com no máximo 15 MB por arquivo.");
+    }
     const formData =
       new FormData();
 
@@ -2075,13 +2085,14 @@ async function uploadPdfFiles() {
       await fetch(
 
         BACKEND_URL +
-        "/upload",
+        "/upload" + (currentScope === "public" ? "?mode=public" : ""),
 
         {
           method:
             "POST",
 
           credentials: "include",
+          headers: {"X-EdgeAI-Guest": guestToken},
           body:
             formData
         }
@@ -2159,6 +2170,7 @@ let currentScope = "public";
 let hasMoreMessages = false;
 let nextBeforeMessage = null;
 let isSending = false;
+let contentEpoch = 0;
 
 function workspaceRoute() {
   if (currentScope === "personal") return BACKEND_URL + "/me/conversations";
@@ -2175,17 +2187,77 @@ function updateAuthControls() {
     : (isWorkerOrigin ? "Visitante não autenticado" : "Para projetos privados, abra o site pela rota /app do Worker.");
   document.getElementById("loginBtn").hidden = Boolean(authUser);
   document.getElementById("logoutBtn").hidden = !authUser;
+  updateVisitorNameDisplay();
+  document.getElementById("editNameBtn").hidden = Boolean(authUser);
 }
 
-function editVisitorName() {
-  const value = prompt("Novo nome de exibição:", visitorName || (authUser?.full_name || ""));
-  if (value === null) return;
+async function editVisitorName() {
+  const values = await askFields("Nome de exibição", [{label:"Seu nome",value:visitorName,max:80}]);
+  if (!values) return;
+  const value = values[0];
   const name = normalizeName(value);
-  if (!isValidName(name)) { alert("Informe um nome válido."); return; }
+  if (!isValidName(name)) { showNotice("Informe um nome válido."); return; }
   visitorName = name;
   localStorage.setItem("edgeai_user_name", visitorName);
   updateVisitorNameDisplay();
 }
+
+function formatBytes(value) {
+  const n=Number(value)||0;
+  return n < 1024 ? n+" B" : n < 1048576 ? (n/1024).toFixed(1)+" KB" : (n/1048576).toFixed(1)+" MB";
+}
+
+function askFields(title, fields, caption="Salvar") {
+  return new Promise(resolve=>{
+    const dialog=document.createElement("dialog");dialog.className="edgeai-dialog";
+    const heading=document.createElement("h2");heading.textContent=title;dialog.appendChild(heading);
+    const form=document.createElement("form");form.method="dialog";
+    const inputs=fields.map(field=>{
+      const label=document.createElement("label");label.textContent=field.label;
+      const input=document.createElement("input");input.type=field.type||"text";input.required=true;
+      input.value=field.value||"";input.maxLength=field.max||200;
+      input.autocomplete=field.autocomplete||"off";label.appendChild(input);form.appendChild(label);return input;
+    });
+    const actions=document.createElement("div");actions.className="actions-row";
+    const cancel=document.createElement("button");cancel.type="button";cancel.textContent="Cancelar";
+    cancel.onclick=()=>dialog.close("cancel");
+    const submit=document.createElement("button");submit.type="submit";submit.textContent=caption;
+    actions.append(cancel,submit);form.appendChild(actions);dialog.appendChild(form);document.body.appendChild(dialog);
+    form.onsubmit=event=>{event.preventDefault();dialog.close("submit");};
+    dialog.onclose=()=>{const values=dialog.returnValue==="submit"?inputs.map(input=>input.value):null;
+      inputs.forEach(input=>input.value="");dialog.remove();resolve(values);};
+    dialog.showModal();inputs[0]?.focus();
+  });
+}
+
+function askConfirmation(text) {
+  return new Promise(resolve=>{
+    const dialog=document.createElement("dialog");dialog.className="edgeai-dialog";
+    const p=document.createElement("p");p.textContent=text;
+    const cancel=document.createElement("button");cancel.textContent="Cancelar";cancel.onclick=()=>dialog.close();
+    const yes=document.createElement("button");yes.textContent="Confirmar";yes.onclick=()=>dialog.close("yes");
+    dialog.append(p,cancel,yes);document.body.appendChild(dialog);
+    dialog.onclose=()=>{const ok=dialog.returnValue==="yes";dialog.remove();resolve(ok);};dialog.showModal();cancel.focus();
+  });
+}
+
+function showNotice(text) {
+  const dialog=document.createElement("dialog");dialog.className="edgeai-dialog";
+  const p=document.createElement("p");p.textContent=text;
+  const close=document.createElement("button");close.textContent="Fechar";close.onclick=()=>dialog.close();
+  dialog.append(p,close);dialog.onclose=()=>dialog.remove();document.body.appendChild(dialog);dialog.showModal();
+}
+
+async function refreshWorkspace() {
+  if (isSending || !authUser || !workspaceRoute()) return;
+  const id=conversationId;
+  await reloadConversationList();await reloadProjectDocuments();
+  if ([...document.querySelectorAll(".conversation-item")].some(el=>el.dataset.conversationId===id)) await openConversation(id);
+}
+
+setInterval(()=>{
+  if (document.visibilityState==="visible" && !document.getElementById("input").value.trim()) refreshWorkspace();
+},30000);
 
 async function apiJson(url, options = {}) {
   const response = await fetch(url, {
@@ -2200,13 +2272,16 @@ async function apiJson(url, options = {}) {
 
 async function loginUser() {
   if (!isWorkerOrigin) {
-    alert("Abra o EDGE AI em: " + BACKEND_URL + "/app");
+    showNotice("Abra o EDGE AI em: " + BACKEND_URL + "/app");
     return;
   }
-  const name = prompt("Nome completo cadastrado:", "");
-  if (!name) return;
-  const key = prompt("Chave individual de acesso:");
-  if (!key) return;
+  if (isSending) return;
+  const values = await askFields("Entrar no EDGE AI", [
+    {label:"Nome completo cadastrado",autocomplete:"username",max:150},
+    {label:"Chave individual de acesso",type:"password",autocomplete:"current-password",max:200}
+  ], "Entrar");
+  if (!values) return;
+  const [name,key] = values;
   try {
     const data = await apiJson(BACKEND_URL + "/auth/login", {
       method: "POST", body: JSON.stringify({user_name:name.trim(),access_key:key.trim()})
@@ -2217,13 +2292,13 @@ async function loginUser() {
     await loadUserProjects();
     updateAuthControls();
     await switchWorkspace(availableProjects.length ? "project:" + availableProjects[0].id : "personal");
-  } catch(error) { alert("Não foi possível entrar: " + error.message); }
+  } catch(error) { showNotice("Não foi possível entrar: " + error.message); }
 }
 
 async function logoutUser() {
-  if (!confirm("Encerrar a sessão atual?")) return;
+  if (isSending || !await askConfirmation("Encerrar a sessão atual?")) return;
   try { await apiJson(BACKEND_URL + "/auth/logout", {method:"POST"}); }
-  catch(error) { alert("Não foi possível sair: " + error.message); return; }
+  catch(error) { showNotice("Não foi possível sair: " + error.message); return; }
   authUser = null;
   availableProjects = [];
   updateWorkspaceOptions();
@@ -2257,6 +2332,10 @@ async function switchWorkspace(value) {
   if (value !== "public" && !authUser) return;
   if (value.startsWith("project:") && !availableProjects.some(p => p.id === value.slice(8))) return;
   currentScope = value;
+  contentEpoch++;
+  document.getElementById("pdfFiles").value="";
+  document.getElementById("showArchived").checked=false;
+  refreshSelectedFiles();
   document.getElementById("workspaceSelect").value = value;
   if (authUser) localStorage.setItem("edgeai_workspace", value);
   conversationId = value === "public"
@@ -2275,6 +2354,7 @@ async function switchWorkspace(value) {
 
 function newChat() {
   if (isSending) return;
+  contentEpoch++;
   conversationId = crypto.randomUUID();
   if (currentScope === "public") localStorage.setItem("edgeai_conversation_id",conversationId);
   messages=[]; apiHistory=[]; hasMoreMessages=false; nextBeforeMessage=null;
@@ -2295,6 +2375,7 @@ async function reloadConversationList(openMostRecent = false) {
   try {
     const archived = document.getElementById("showArchived").checked;
     const result = await apiJson(base + "?archived=" + (archived ? "1" : "0"));
+    if (base !== workspaceRoute()) return;
     node.replaceChildren();
     const items = result.conversations || [];
     if (!items.length) { node.textContent="Nenhuma conversa neste espaço."; return; }
@@ -2328,7 +2409,10 @@ async function reloadConversationList(openMostRecent = false) {
 async function openConversation(id) {
   if (isSending || !workspaceRoute()) return;
   try {
-    const data=await apiJson(workspaceRoute()+"/"+encodeURIComponent(id)+"/messages");
+    const base=workspaceRoute();
+    const epoch=++contentEpoch;
+    const data=await apiJson(base+"/"+encodeURIComponent(id)+"/messages");
+    if (base !== workspaceRoute() || epoch !== contentEpoch) return;
     conversationId=id;
     messages=(data.messages||[]).map(m=>({
       id:m.id,role:m.role,content:m.content,sender_name:m.sender_name
@@ -2341,7 +2425,7 @@ async function openConversation(id) {
     document.querySelectorAll(".conversation-item").forEach(el=>el.classList.remove("active"));
     const wrapper=[...document.querySelectorAll(".conversation-item")].find(el=>el.dataset.conversationId===id);
     if(wrapper) wrapper.classList.add("active");
-  } catch(error) { alert("Não foi possível abrir a conversa: " + error.message); }
+  } catch(error) { showNotice("Não foi possível abrir a conversa: " + error.message); }
 }
 
 async function loadOlderMessages() {
@@ -2354,7 +2438,7 @@ async function loadOlderMessages() {
     hasMoreMessages=Boolean(data.has_more);nextBeforeMessage=data.next_before;
     render();
     document.getElementById("chat").scrollTop=0;
-  } catch(error) {alert("Erro ao carregar mensagens anteriores: "+error.message);}
+  } catch(error) {showNotice("Erro ao carregar mensagens anteriores: "+error.message);}
 }
 
 async function mutateConversation(id,method,body) {
@@ -2363,25 +2447,26 @@ async function mutateConversation(id,method,body) {
   return apiJson(workspaceRoute()+"/"+encodeURIComponent(id),options);
 }
 async function renameConversation(item) {
-  const name=prompt("Novo título:",item.title||"");
+  const values=await askFields("Renomear conversa",[{label:"Título",value:item.title||"",max:120}]);
+  const name=values?.[0];
   if(!name || !name.trim()) return;
   try {await mutateConversation(item.id,"PATCH",{title:name.trim()});await reloadConversationList();}
-  catch(error) {alert(error.message);}
+  catch(error) {showNotice(error.message);}
 }
 async function archiveConversation(item) {
   try {
     await mutateConversation(item.id,"PATCH",{is_archived:!Boolean(item.is_archived)});
     if(item.id===conversationId) newChat();
     await reloadConversationList();
-  } catch(error) {alert(error.message);}
+  } catch(error) {showNotice(error.message);}
 }
 async function deleteConversation(item) {
-  if(!confirm("Excluir permanentemente esta conversa e suas mensagens?")) return;
+  if(!await askConfirmation("Excluir permanentemente esta conversa e suas mensagens?")) return;
   try {
     await mutateConversation(item.id,"DELETE");
     if(item.id===conversationId) newChat();
     await reloadConversationList();
-  } catch(error) {alert(error.message);}
+  } catch(error) {showNotice(error.message);}
 }
 
 
@@ -2414,16 +2499,16 @@ async function reloadProjectDocuments() {
       link.setAttribute("download", file.file_name);
       const bytes = document.createElement("span");
       bytes.className = "info";
-      bytes.textContent = (file.size_bytes / 1024).toFixed(0) + " KB";
+      bytes.textContent = formatBytes(file.size_bytes);
       const remove = document.createElement("button");
       remove.className = "mini-btn"; remove.type = "button";
       remove.textContent = "Excluir";
       remove.onclick = async () => {
-        if (!confirm("Excluir permanentemente " + file.file_name + "?")) return;
+        if (!await askConfirmation("Excluir permanentemente " + file.file_name + "?")) return;
         try {
           await apiJson(base + "/" + encodeURIComponent(file.id), {method:"DELETE"});
           if (base === projectFilesBase()) await reloadProjectDocuments();
-        } catch (error) { alert("Erro ao excluir: " + error.message); }
+        } catch (error) { showNotice("Erro ao excluir: " + error.message); }
       };
       row.append(link,bytes,remove);
       list.appendChild(row);
@@ -2433,10 +2518,10 @@ async function reloadProjectDocuments() {
 
 async function uploadProjectDocuments() {
   const base = projectFilesBase();
-  if (!base) { alert("Selecione um projeto autorizado."); return; }
+  if (!base) { showNotice("Selecione um projeto autorizado."); return; }
   const input = document.getElementById("projectUploadFiles");
   const files = [...input.files];
-  if (!files.length) { alert("Selecione pelo menos um arquivo."); return; }
+  if (!files.length) { showNotice("Selecione pelo menos um arquivo."); return; }
   const button = document.getElementById("projectUploadBtn");
   button.disabled = true;
   try {
@@ -2451,7 +2536,7 @@ async function uploadProjectDocuments() {
     }
     input.value = "";
     if (base === projectFilesBase()) await reloadProjectDocuments();
-  } catch (error) { alert("Erro ao enviar arquivo: " + error.message); }
+  } catch (error) { showNotice("Erro ao enviar arquivo: " + error.message); }
   finally { button.disabled = false; }
 }
 
@@ -2549,7 +2634,8 @@ async function sendToBackend(
           headers: {
 
             "Content-Type":
-              "application/json"
+              "application/json",
+            "X-EdgeAI-Guest": guestToken
           },
 
           body:
@@ -2573,7 +2659,7 @@ async function sendToBackend(
               client_version:
                 APP_VERSION,
 
-              ...(currentScope === "personal" ? {mode: "personal"} : {}),
+              ...(currentScope === "personal" ? {mode: "personal"} : currentScope === "public" ? {mode:"public"} : {}),
               ...(currentScope.startsWith("project:") ? {project_id: currentScope.slice(8)} : {})
 
             })
@@ -2793,7 +2879,7 @@ async function sendMessage() {
     "";
 
   if (currentScope !== "public") {
-    if (!authUser) { alert("Entre para acessar este espaço de trabalho."); return; }
+    if (!authUser) { showNotice("Entre para acessar este espaço de trabalho."); return; }
     messages.push({role:"user",content:text || "[PDF enviado]",sender_name:authUser.full_name});
     render();
     await sendToBackend(text);
