@@ -1235,6 +1235,15 @@
       }
     }
 
+
+    /* EDGE AI 2.6 - documentos permanentes do projeto */
+    .project-file-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+    .project-file-list { display:flex; flex-direction:column; gap:8px; margin-top:12px; max-height:240px; overflow:auto; }
+    .project-file-row { display:flex; align-items:center; gap:8px; min-width:0; padding:8px; border:1px solid var(--border); border-radius:12px; }
+    .project-file-row a { color:var(--text); min-width:0; flex:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+    .project-file-row button { flex-shrink:0; }
+    .project-file-notice { font-size:.77rem; color:var(--muted); margin-top:8px; line-height:1.4; }
+
   </style>
 
 </head>
@@ -1329,6 +1338,20 @@
         <label class="archive-toggle"><input id="showArchived" type="checkbox" onchange="reloadConversationList()"> Arquivadas</label>
       </div>
       <div id="conversationList" class="conversation-list"><span class="info">Entre para consultar seu histórico privado.</span></div>
+    </div>
+
+
+    <!-- EDGE AI 2.6: arquivos persistentes privados (não são enviados automaticamente à IA). -->
+    <div class="panel-block" id="projectFilesPanel" hidden>
+      <span class="label">Arquivos do projeto</span>
+      <input id="projectUploadFiles" class="file-input" type="file" multiple
+        accept=".pdf,.txt,.md,.csv,.json,.png,.jpg,.jpeg,.docx,.xlsx">
+      <div class="project-file-actions">
+        <button type="button" class="mini-btn" id="projectUploadBtn" onclick="uploadProjectDocuments()">Enviar arquivos</button>
+        <button type="button" class="mini-btn" onclick="reloadProjectDocuments()">Atualizar lista</button>
+      </div>
+      <div id="projectFilesList" class="project-file-list">Nenhum arquivo.</div>
+      <div class="project-file-notice">Máximo 15 MB por arquivo. Os documentos ficam privados no R2 e não entram automaticamente no contexto da IA.</div>
     </div>
 
     <div class="panel-block">
@@ -1520,7 +1543,7 @@ VERSÃO
 */
 
 const APP_VERSION =
-  "2.5.0";
+  "2.6.0";
 
 
 /*
@@ -2247,6 +2270,7 @@ async function switchWorkspace(value) {
     : (value === "personal" ? "Minhas conversas" : "Assistente EDGE AI");
   render();
   await reloadConversationList(true);
+  await reloadProjectDocuments();
 }
 
 function newChat() {
@@ -2358,6 +2382,77 @@ async function deleteConversation(item) {
     if(item.id===conversationId) newChat();
     await reloadConversationList();
   } catch(error) {alert(error.message);}
+}
+
+
+/* EDGE AI 2.6 - Gerenciamento de documentos persistentes do projeto. */
+function projectFilesBase() {
+  return authUser && currentScope.startsWith("project:")
+    ? BACKEND_URL + "/projects/" + encodeURIComponent(currentScope.slice(8)) + "/files"
+    : null;
+}
+
+async function reloadProjectDocuments() {
+  const panel = document.getElementById("projectFilesPanel");
+  const base = projectFilesBase();
+  panel.hidden = !base;
+  const list = document.getElementById("projectFilesList");
+  if (!base) { list.textContent = "Nenhum projeto selecionado."; return; }
+  list.textContent = "Carregando arquivos...";
+  try {
+    const result = await apiJson(base);
+    // Ignora respostas atrasadas após mudança de projeto.
+    if (base !== projectFilesBase()) return;
+    list.replaceChildren();
+    if (!result.files?.length) { list.textContent = "Nenhum arquivo armazenado."; return; }
+    for (const file of result.files) {
+      const row = document.createElement("div"); row.className = "project-file-row";
+      const link = document.createElement("a");
+      link.href = base + "/" + encodeURIComponent(file.id) + "/download";
+      link.textContent = file.file_name;
+      link.title = file.file_name;
+      link.setAttribute("download", file.file_name);
+      const bytes = document.createElement("span");
+      bytes.className = "info";
+      bytes.textContent = (file.size_bytes / 1024).toFixed(0) + " KB";
+      const remove = document.createElement("button");
+      remove.className = "mini-btn"; remove.type = "button";
+      remove.textContent = "Excluir";
+      remove.onclick = async () => {
+        if (!confirm("Excluir permanentemente " + file.file_name + "?")) return;
+        try {
+          await apiJson(base + "/" + encodeURIComponent(file.id), {method:"DELETE"});
+          if (base === projectFilesBase()) await reloadProjectDocuments();
+        } catch (error) { alert("Erro ao excluir: " + error.message); }
+      };
+      row.append(link,bytes,remove);
+      list.appendChild(row);
+    }
+  } catch (error) { if (base === projectFilesBase()) list.textContent = "Falha ao listar arquivos: " + error.message; }
+}
+
+async function uploadProjectDocuments() {
+  const base = projectFilesBase();
+  if (!base) { alert("Selecione um projeto autorizado."); return; }
+  const input = document.getElementById("projectUploadFiles");
+  const files = [...input.files];
+  if (!files.length) { alert("Selecione pelo menos um arquivo."); return; }
+  const button = document.getElementById("projectUploadBtn");
+  button.disabled = true;
+  try {
+    for (const file of files) {
+      if (file.size > 15 * 1024 * 1024 || file.size === 0) {
+        throw new Error("Arquivo fora do limite de 15 MB: " + file.name);
+      }
+      const form = new FormData(); form.append("file", file);
+      const response = await fetch(base, {method:"POST",credentials:"include",body:form});
+      const data = await response.json();
+      if (!response.ok) throw new Error(file.name + ": " + (data.error || response.status));
+    }
+    input.value = "";
+    if (base === projectFilesBase()) await reloadProjectDocuments();
+  } catch (error) { alert("Erro ao enviar arquivo: " + error.message); }
+  finally { button.disabled = false; }
 }
 
 async function initWorkspace() {
