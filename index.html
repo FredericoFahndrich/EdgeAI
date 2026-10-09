@@ -1155,6 +1155,33 @@
     ========================================================
     */
 
+
+    /* EDGE AI 2.5 - Projetos, sessões e histórico */
+    .sidebar { overflow-y: auto; min-height: 0; }
+    .actions-row { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+    .mini-btn, .workspace-new, .workspace-select, .conversation-item {
+      background: rgba(114,168,255,.09); color: var(--text);
+      border: 1px solid var(--border); border-radius: 10px;
+      padding: 9px 11px; font: inherit; cursor: pointer;
+    }
+    .mini-btn:hover, .workspace-new:hover, .conversation-item:hover { background: rgba(114,168,255,.2); }
+    .workspace-select { width: 100%; background: #152446; margin-bottom: 8px; }
+    .workspace-new { width: 100%; text-align: left; font-weight: 700; }
+    .list-heading { display:flex; gap:8px; justify-content: space-between; align-items:center;
+      color: var(--muted); font-size:.8rem; margin: 14px 0 8px; }
+    .archive-toggle { display:flex; align-items:center; gap:3px; cursor:pointer; }
+    .conversation-list { display:flex; flex-direction:column; gap:6px; max-height:250px;
+      overflow-y:auto; min-height:36px; }
+    .conversation-item { display:flex; align-items:center; width:100%; gap:6px; text-align:left; }
+    .conversation-item.active { border-color:var(--accent); background:rgba(114,168,255,.18); }
+    .conversation-title { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; flex:1; }
+    .item-tool { background:transparent; color:var(--muted); border:0; cursor:pointer;
+      padding:4px; font-size:.85rem; }
+    .item-tool:hover { color:var(--text); }
+    .older-btn { border:1px solid var(--border); background:var(--panel-2);
+      color:var(--text); border-radius:12px; padding:8px 12px; cursor:pointer; align-self:center; }
+    [hidden] { display:none !important; }
+
     @media(max-width: 920px) {
 
       body {
@@ -1280,6 +1307,29 @@
 
     </div>
 
+
+    <div class="panel-block">
+      <span class="label">Identificação</span>
+      <div id="authStatus" class="info">Verificando sessão...</div>
+      <div class="actions-row">
+        <button class="mini-btn" id="loginBtn" type="button" onclick="loginUser()">Entrar</button>
+        <button class="mini-btn" id="logoutBtn" type="button" onclick="logoutUser()" hidden>Sair</button>
+        <button class="mini-btn" type="button" onclick="editVisitorName()">Alterar nome</button>
+      </div>
+    </div>
+
+    <div class="panel-block">
+      <span class="label">Espaço de trabalho</span>
+      <select id="workspaceSelect" class="workspace-select" onchange="switchWorkspace(this.value)">
+        <option value="public">Chat público</option>
+      </select>
+      <button class="workspace-new" type="button" onclick="newChat()">+ Nova conversa</button>
+      <div class="list-heading">
+        <span>Histórico</span>
+        <label class="archive-toggle"><input id="showArchived" type="checkbox" onchange="reloadConversationList()"> Arquivadas</label>
+      </div>
+      <div id="conversationList" class="conversation-list"><span class="info">Entre para consultar seu histórico privado.</span></div>
+    </div>
 
     <div class="panel-block">
 
@@ -1470,7 +1520,7 @@ VERSÃO
 */
 
 const APP_VERSION =
-  "2.2.0";
+  "2.5.0";
 
 
 /*
@@ -1698,7 +1748,7 @@ function render() {
       meta.textContent =
         message.role === "user"
           ?
-          "Você"
+          (message.sender_name || "Você")
           :
           "EDGE AI";
 
@@ -1736,6 +1786,13 @@ function render() {
   );
 
 
+  if (hasMoreMessages && nextBeforeMessage) {
+    const older=document.createElement("button");
+    older.type="button";older.className="older-btn";
+    older.textContent="Carregar mensagens anteriores";
+    older.onclick=loadOlderMessages;
+    chat.prepend(older);
+  }
   chat.scrollTop =
     chat.scrollHeight;
 }
@@ -2001,6 +2058,7 @@ async function uploadPdfFiles() {
           method:
             "POST",
 
+          credentials: "include",
           body:
             formData
         }
@@ -2069,9 +2127,259 @@ ENVIA MENSAGEM PARA O BACKEND
 ============================================================
 */
 
+
+/* EDGE AI 2.5 - Autenticação e espaços de trabalho. */
+const isWorkerOrigin = window.location.origin === new URL(BACKEND_URL).origin;
+let authUser = null;
+let availableProjects = [];
+let currentScope = "public";
+let hasMoreMessages = false;
+let nextBeforeMessage = null;
+let isSending = false;
+
+function workspaceRoute() {
+  if (currentScope === "personal") return BACKEND_URL + "/me/conversations";
+  if (currentScope.startsWith("project:")) {
+    return BACKEND_URL + "/projects/" + encodeURIComponent(currentScope.slice(8)) + "/conversations";
+  }
+  return null;
+}
+
+function updateAuthControls() {
+  const status = document.getElementById("authStatus");
+  status.textContent = authUser
+    ? "Autenticado: " + authUser.full_name
+    : (isWorkerOrigin ? "Visitante não autenticado" : "Para projetos privados, abra o site pela rota /app do Worker.");
+  document.getElementById("loginBtn").hidden = Boolean(authUser);
+  document.getElementById("logoutBtn").hidden = !authUser;
+}
+
+function editVisitorName() {
+  const value = prompt("Novo nome de exibição:", visitorName || (authUser?.full_name || ""));
+  if (value === null) return;
+  const name = normalizeName(value);
+  if (!isValidName(name)) { alert("Informe um nome válido."); return; }
+  visitorName = name;
+  localStorage.setItem("edgeai_user_name", visitorName);
+  updateVisitorNameDisplay();
+}
+
+async function apiJson(url, options = {}) {
+  const response = await fetch(url, {
+    credentials: "include", cache: "no-store", ...options,
+    headers: {...(options.body ? {"Content-Type":"application/json"} : {}), ...(options.headers || {})}
+  });
+  let data;
+  try { data = await response.json(); } catch { throw new Error("Resposta inválida do servidor."); }
+  if (!response.ok) throw new Error(data.error || "Falha de comunicação (HTTP " + response.status + ").");
+  return data;
+}
+
+async function loginUser() {
+  if (!isWorkerOrigin) {
+    alert("Abra o EDGE AI em: " + BACKEND_URL + "/app");
+    return;
+  }
+  const name = prompt("Nome completo cadastrado:", "");
+  if (!name) return;
+  const key = prompt("Chave individual de acesso:");
+  if (!key) return;
+  try {
+    const data = await apiJson(BACKEND_URL + "/auth/login", {
+      method: "POST", body: JSON.stringify({user_name:name.trim(),access_key:key.trim()})
+    });
+    authUser = data.user;
+    if (!visitorName) { visitorName = authUser.full_name; localStorage.setItem("edgeai_user_name",visitorName); }
+    updateVisitorNameDisplay();
+    await loadUserProjects();
+    updateAuthControls();
+    await switchWorkspace(availableProjects.length ? "project:" + availableProjects[0].id : "personal");
+  } catch(error) { alert("Não foi possível entrar: " + error.message); }
+}
+
+async function logoutUser() {
+  if (!confirm("Encerrar a sessão atual?")) return;
+  try { await apiJson(BACKEND_URL + "/auth/logout", {method:"POST"}); }
+  catch(error) { alert("Não foi possível sair: " + error.message); return; }
+  authUser = null;
+  availableProjects = [];
+  updateWorkspaceOptions();
+  updateAuthControls();
+  await switchWorkspace("public");
+}
+
+async function loadUserProjects() {
+  if (!authUser) { availableProjects=[]; updateWorkspaceOptions(); return; }
+  const data = await apiJson(BACKEND_URL + "/projects");
+  availableProjects = data.projects || [];
+  updateWorkspaceOptions();
+}
+
+function updateWorkspaceOptions() {
+  const select = document.getElementById("workspaceSelect");
+  select.replaceChildren();
+  const add = (value,label) => {
+    const el = document.createElement("option"); el.value=value; el.textContent=label; select.appendChild(el);
+  };
+  add("public", "Chat público");
+  if (authUser) {
+    add("personal", "Minhas conversas");
+    for (const project of availableProjects) add("project:" + project.id, project.name);
+  }
+  if ([...select.options].some(el => el.value === currentScope)) select.value = currentScope;
+}
+
+async function switchWorkspace(value) {
+  if (isSending) { document.getElementById("workspaceSelect").value=currentScope; return; }
+  if (value !== "public" && !authUser) return;
+  if (value.startsWith("project:") && !availableProjects.some(p => p.id === value.slice(8))) return;
+  currentScope = value;
+  document.getElementById("workspaceSelect").value = value;
+  if (authUser) localStorage.setItem("edgeai_workspace", value);
+  conversationId = value === "public"
+    ? (localStorage.getItem("edgeai_conversation_id") || crypto.randomUUID())
+    : crypto.randomUUID();
+  messages = []; apiHistory = []; hasMoreMessages=false; nextBeforeMessage=null;
+  waitingForName=false; pendingFirstMessage="";
+  document.getElementById("input").placeholder="Digite sua mensagem...";
+  document.querySelector(".topbar h2").textContent = value.startsWith("project:")
+    ? (availableProjects.find(p=>p.id===value.slice(8))?.name || "Projeto")
+    : (value === "personal" ? "Minhas conversas" : "Assistente EDGE AI");
+  render();
+  await reloadConversationList(true);
+}
+
+function newChat() {
+  if (isSending) return;
+  conversationId = crypto.randomUUID();
+  if (currentScope === "public") localStorage.setItem("edgeai_conversation_id",conversationId);
+  messages=[]; apiHistory=[]; hasMoreMessages=false; nextBeforeMessage=null;
+  waitingForName=false; pendingFirstMessage="";
+  document.getElementById("input").value="";
+  render();
+  document.querySelectorAll(".conversation-item").forEach(el=>el.classList.remove("active"));
+  document.getElementById("input").focus();
+}
+
+async function reloadConversationList(openMostRecent = false) {
+  const node = document.getElementById("conversationList");
+  const base = workspaceRoute();
+  if (!base) {
+    node.textContent = "O chat público permanece neste navegador. Entre para acessar conversas privadas.";
+    return;
+  }
+  try {
+    const archived = document.getElementById("showArchived").checked;
+    const result = await apiJson(base + "?archived=" + (archived ? "1" : "0"));
+    node.replaceChildren();
+    const items = result.conversations || [];
+    if (!items.length) { node.textContent="Nenhuma conversa neste espaço."; return; }
+    for (const item of items) {
+      const wrapper=document.createElement("div");wrapper.className="conversation-item";
+      wrapper.dataset.conversationId=item.id;
+      if (item.id===conversationId) wrapper.classList.add("active");
+      const title=document.createElement("button");
+      title.className="conversation-title item-tool";
+      title.style.textAlign="left";
+      title.textContent=item.title || "Conversa sem título";
+      title.title=item.title || "Conversa";
+      title.onclick=()=>openConversation(item.id);
+      wrapper.appendChild(title);
+      const actions=[
+        ["✎", "Renomear", ()=>renameConversation(item)],
+        [item.is_archived ? "↩" : "▣", item.is_archived ? "Restaurar" : "Arquivar", ()=>archiveConversation(item)],
+        ["×", "Excluir", ()=>deleteConversation(item)]
+      ];
+      for (const [symbol,caption,fn] of actions) {
+        const b=document.createElement("button");b.className="item-tool";
+        b.type="button";b.textContent=symbol;b.title=caption;b.setAttribute("aria-label",caption);
+        b.onclick=fn;wrapper.appendChild(b);
+      }
+      node.appendChild(wrapper);
+    }
+    if (openMostRecent && !archived && items.length) await openConversation(items[0].id);
+  } catch(error) { node.textContent="Erro ao listar conversas: " + error.message; }
+}
+
+async function openConversation(id) {
+  if (isSending || !workspaceRoute()) return;
+  try {
+    const data=await apiJson(workspaceRoute()+"/"+encodeURIComponent(id)+"/messages");
+    conversationId=id;
+    messages=(data.messages||[]).map(m=>({
+      id:m.id,role:m.role,content:m.content,sender_name:m.sender_name
+    }));
+    apiHistory=messages.filter(m=>m.role==="user" || m.role==="assistant")
+      .slice(-20).map(m=>({role:m.role,content:m.content}));
+    hasMoreMessages=Boolean(data.has_more);
+    nextBeforeMessage=data.next_before;
+    render();
+    document.querySelectorAll(".conversation-item").forEach(el=>el.classList.remove("active"));
+    const wrapper=[...document.querySelectorAll(".conversation-item")].find(el=>el.dataset.conversationId===id);
+    if(wrapper) wrapper.classList.add("active");
+  } catch(error) { alert("Não foi possível abrir a conversa: " + error.message); }
+}
+
+async function loadOlderMessages() {
+  if (!workspaceRoute() || !hasMoreMessages || !nextBeforeMessage) return;
+  try {
+    const data=await apiJson(workspaceRoute()+"/"+encodeURIComponent(conversationId)+
+      "/messages?before="+nextBeforeMessage);
+    const older=(data.messages||[]).map(m=>({id:m.id,role:m.role,content:m.content,sender_name:m.sender_name}));
+    messages=[...older,...messages];
+    hasMoreMessages=Boolean(data.has_more);nextBeforeMessage=data.next_before;
+    render();
+    document.getElementById("chat").scrollTop=0;
+  } catch(error) {alert("Erro ao carregar mensagens anteriores: "+error.message);}
+}
+
+async function mutateConversation(id,method,body) {
+  const options={method};
+  if (body) options.body=JSON.stringify(body);
+  return apiJson(workspaceRoute()+"/"+encodeURIComponent(id),options);
+}
+async function renameConversation(item) {
+  const name=prompt("Novo título:",item.title||"");
+  if(!name || !name.trim()) return;
+  try {await mutateConversation(item.id,"PATCH",{title:name.trim()});await reloadConversationList();}
+  catch(error) {alert(error.message);}
+}
+async function archiveConversation(item) {
+  try {
+    await mutateConversation(item.id,"PATCH",{is_archived:!Boolean(item.is_archived)});
+    if(item.id===conversationId) newChat();
+    await reloadConversationList();
+  } catch(error) {alert(error.message);}
+}
+async function deleteConversation(item) {
+  if(!confirm("Excluir permanentemente esta conversa e suas mensagens?")) return;
+  try {
+    await mutateConversation(item.id,"DELETE");
+    if(item.id===conversationId) newChat();
+    await reloadConversationList();
+  } catch(error) {alert(error.message);}
+}
+
+async function initWorkspace() {
+  updateAuthControls();
+  if (!isWorkerOrigin) {await switchWorkspace("public");return;}
+  try {
+    const session=await apiJson(BACKEND_URL+"/auth/session");
+    authUser=session.authenticated ? session.user : null;
+    if(authUser) await loadUserProjects();
+    updateAuthControls();
+    const saved=localStorage.getItem("edgeai_workspace");
+    const valid=saved==="personal" || (saved?.startsWith("project:") &&
+      availableProjects.some(p=>p.id===saved.slice(8)));
+    await switchWorkspace(authUser ? (valid ? saved : (availableProjects.length ? "project:"+availableProjects[0].id : "personal")) : "public");
+  } catch(error) {console.warn("Sessão EDGE AI:",error);authUser=null;updateAuthControls();await switchWorkspace("public");}
+}
+
 async function sendToBackend(
   text
 ) {
+  isSending = true;
+  document.getElementById("workspaceSelect").disabled = true;
 
   const loading =
     document.getElementById(
@@ -2168,7 +2476,10 @@ async function sendToBackend(
                 fileIds,
 
               client_version:
-                APP_VERSION
+                APP_VERSION,
+
+              ...(currentScope === "personal" ? {mode: "personal"} : {}),
+              ...(currentScope.startsWith("project:") ? {project_id: currentScope.slice(8)} : {})
 
             })
         }
@@ -2302,6 +2613,11 @@ async function sendToBackend(
 
 
     render();
+    if (typeof data.conversation_id === "string") {
+      conversationId = data.conversation_id;
+      if (currentScope === "public") localStorage.setItem("edgeai_conversation_id",conversationId);
+    }
+    if (currentScope !== "public") await reloadConversationList();
 
   } catch(error) {
 
@@ -2333,6 +2649,8 @@ async function sendToBackend(
 
     sendButton.disabled =
       false;
+    isSending = false;
+    document.getElementById("workspaceSelect").disabled = false;
   }
 }
 
@@ -2344,6 +2662,7 @@ FUNÇÃO PRINCIPAL
 */
 
 async function sendMessage() {
+  if (isSending) return;
 
   const input =
     document.getElementById(
@@ -2377,6 +2696,14 @@ async function sendMessage() {
 
   input.value =
     "";
+
+  if (currentScope !== "public") {
+    if (!authUser) { alert("Entre para acessar este espaço de trabalho."); return; }
+    messages.push({role:"user",content:text || "[PDF enviado]",sender_name:authUser.full_name});
+    render();
+    await sendToBackend(text);
+    return;
+  }
 
 
   /*
@@ -2752,6 +3079,7 @@ render();
 refreshSelectedFiles();
 
 void checkBackend();
+void initWorkspace();
 
 </script>
 
