@@ -3754,5 +3754,50 @@ void checkBackend();
 void initWorkspace();
 
 </script>
+
+<!-- EDGE AI - ETAPA 5B: inicialização do Firebase Authentication.
+     Este módulo não concede acesso aos dados privados do D1. -->
+<script type="module" id="edgeaiFirebaseBootstrap">
+  const firebaseConfig = Object.freeze({
+    apiKey: "AIzaSyCTgHxl5LzEV1bCqDJSU14cElGDZi3xonU",
+    authDomain: "edgeai-auth.firebaseapp.com",
+    projectId: "edgeai-auth",
+    storageBucket: "edgeai-auth.firebasestorage.app",
+    messagingSenderId: "785839887578",
+    appId: "1:785839887578:web:0d3f6e5f2e6471cc2ec1e3"
+  });
+
+  const status = { state: "loading", projectId: firebaseConfig.projectId, backendIntegrated: false };
+  window.edgeaiFirebaseStatus = status;
+
+  async function initEdgeaiFirebase() {
+    try {
+      const [{ initializeApp, getApps }, { getAuth }] = await Promise.all([
+        import("https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js"),
+        import("https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js")
+      ]);
+
+      const currentApp = getApps().find(item => item.name === "edgeai-auth");
+      const app = currentApp || initializeApp(firebaseConfig, "edgeai-auth");
+
+      if (app.options.projectId !== firebaseConfig.projectId) {
+        throw new Error("Projeto Firebase incorreto.");
+      }
+
+      const auth = getAuth(app);
+      window.edgeaiFirebase = Object.freeze({ app, auth });
+
+      status.state = "ready";
+      document.documentElement.dataset.edgeaiFirebase = "ready";
+    } catch (error) {
+      status.state = "error";
+      status.error = error?.code || error?.message || "Falha ao carregar Firebase.";
+      document.documentElement.dataset.edgeaiFirebase = "error";
+      console.error("EDGE AI: erro ao inicializar Firebase Auth.", error);
+    }
+  }
+
+  void initEdgeaiFirebase();
+</script>
 </body>
 </html>
