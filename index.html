@@ -3742,6 +3742,13 @@ ATIVAR INTERAÇÕES DA ETAPA 4
 ============================================================
 */
 
+// Exportação explícita para diagnósticos no Console.
+window.edgeaiSetLoginLoading = edgeaiSetLoginLoading;
+window.setupEdgeaiLoginForm = setupEdgeaiLoginForm;
+
+// Permite identificar se a versão atualizada foi carregada.
+document.documentElement.dataset.edgeaiLoginEtapa = "4.1";
+
 setupEdgeaiLoginForm();
 
   
