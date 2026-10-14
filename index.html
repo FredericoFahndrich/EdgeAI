@@ -303,6 +303,364 @@
 
 <body>
   <header class="site-header">
+    
+    <!-- ==========================================
+         EDGE AI - LOGIN SCREEN
+         Estrutura HTML - Etapa 2
+         Integração Firebase: etapa posterior
+    =========================================== -->
+    
+    <main
+      id="edgeaiLoginScreen"
+      class="edgeai-login-screen"
+      aria-label="Acesso ao EDGE AI"
+      hidden
+    >
+    
+      <!-- APRESENTAÇÃO / ÁREA ESQUERDA -->
+      <section
+        class="edgeai-login-hero"
+        aria-labelledby="edgeaiLoginTitle"
+      >
+    
+        <header class="edgeai-login-hero-header">
+          <div class="edgeai-login-brand">
+    
+            <span
+              class="edgeai-login-brand-icon"
+              aria-hidden="true"
+            >🤖</span>
+    
+            <div class="edgeai-login-brand-info">
+              <span class="edgeai-login-brand-name">
+                EDGE <span>AI</span>
+              </span>
+              <p>
+                Hardware • Sistemas Embarcados • Eletrônica
+              </p>
+            </div>
+          </div>
+        </header>
+    
+        <div class="edgeai-login-hero-content">
+    
+          <h1 id="edgeaiLoginTitle">
+            Da ideia ao dispositivo
+            <span class="edgeai-login-gradient-text">
+              inteligente.
+            </span>
+          </h1>
+    
+          <p class="edgeai-login-description">
+            Assistente técnico com IA para hardware,
+            firmware, sistemas embarcados e eletrônica.
+            Tire dúvidas, analise projetos, explore
+            possibilidades e acelere o desenvolvimento
+            dos seus projetos.
+          </p>
+    
+          <ul class="edgeai-login-features">
+    
+            <li>
+              <span class="edgeai-feature-icon" aria-hidden="true">
+                ◻
+              </span>
+              <span>Respostas técnicas com IA</span>
+            </li>
+    
+            <li>
+              <span class="edgeai-feature-icon" aria-hidden="true">
+                ▦
+              </span>
+              <span>Análise de hardware e firmware</span>
+            </li>
+    
+            <li>
+              <span class="edgeai-feature-icon" aria-hidden="true">
+                ▤
+              </span>
+              <span>Leitura e análise de PDFs técnicos</span>
+            </li>
+    
+            <li>
+              <span class="edgeai-feature-icon" aria-hidden="true">
+                &lt;/&gt;
+              </span>
+              <span>Apoio a projetos específicos</span>
+            </li>
+    
+          </ul>
+    
+        </div>
+    
+        <!-- Área reservada para a ilustração independente -->
+        <div
+          id="edgeaiLoginArtwork"
+          class="edgeai-login-artwork"
+          aria-hidden="true"
+        ></div>
+    
+        <div class="edgeai-login-hero-footer">
+          <span aria-hidden="true">✦</span>
+          <p>
+            Conhecimento técnico.
+            <strong>Agora com o poder da IA.</strong>
+          </p>
+        </div>
+    
+      </section>
+    
+      <!-- AUTENTICAÇÃO / ÁREA DIREITA -->
+      <section
+        class="edgeai-login-auth-area"
+        aria-labelledby="edgeaiLoginWelcome"
+      >
+    
+        <div class="edgeai-login-card">
+    
+          <header class="edgeai-login-card-header">
+    
+            <div class="edgeai-login-card-brand">
+              <span
+                class="edgeai-login-brand-icon"
+                aria-hidden="true"
+              >🤖</span>
+    
+              <span class="edgeai-login-brand-name">
+                EDGE <span>AI</span>
+              </span>
+            </div>
+    
+            <p>
+              Hardware • Sistemas Embarcados • Eletrônica
+            </p>
+    
+          </header>
+    
+          <div class="edgeai-login-welcome">
+    
+            <h2 id="edgeaiLoginWelcome">
+              Bem-vindo de volta!
+            </h2>
+    
+            <p>
+              Acesse sua conta para continuar no seu
+              espaço de trabalho e conversar com
+              o assistente técnico.
+            </p>
+    
+          </div>
+    
+          <!-- FORMULÁRIO FIREBASE -->
+          <form
+            id="edgeaiLoginForm"
+            class="edgeai-login-form"
+            autocomplete="on"
+          >
+    
+            <!-- E-MAIL -->
+            <div class="edgeai-login-field">
+    
+              <label for="edgeaiLoginEmail">
+                E-mail
+              </label>
+    
+              <div class="edgeai-login-input-wrap">
+    
+                <span
+                  class="edgeai-login-input-icon"
+                  aria-hidden="true"
+                >✉</span>
+    
+                <input
+                  id="edgeaiLoginEmail"
+                  name="email"
+                  type="email"
+                  placeholder="seu@email.com"
+                  autocomplete="username"
+                  inputmode="email"
+                  maxlength="254"
+                  required
+                  disabled
+                  aria-describedby="edgeaiLoginEmailError"
+                >
+    
+              </div>
+    
+              <p
+                id="edgeaiLoginEmailError"
+                class="edgeai-login-field-error"
+                role="alert"
+                hidden
+              ></p>
+    
+            </div>
+    
+            <!-- SENHA -->
+            <div class="edgeai-login-field">
+    
+              <label for="edgeaiLoginPassword">
+                Senha
+              </label>
+    
+              <div class="edgeai-login-input-wrap">
+    
+                <span
+                  class="edgeai-login-input-icon"
+                  aria-hidden="true"
+                >♙</span>
+    
+                <input
+                  id="edgeaiLoginPassword"
+                  name="password"
+                  type="password"
+                  placeholder="Sua senha"
+                  autocomplete="current-password"
+                  required
+                  disabled
+                  aria-describedby="edgeaiLoginPasswordError"
+                >
+    
+                <button
+                  id="edgeaiLoginTogglePassword"
+                  class="edgeai-login-toggle-password"
+                  type="button"
+                  aria-label="Mostrar senha"
+                  aria-pressed="false"
+                  disabled
+                >
+                  <span aria-hidden="true">◉</span>
+                </button>
+    
+              </div>
+    
+              <p
+                id="edgeaiLoginPasswordError"
+                class="edgeai-login-field-error"
+                role="alert"
+                hidden
+              ></p>
+    
+            </div>
+    
+            <!-- LEMBRAR / RECUPERAÇÃO -->
+            <div class="edgeai-login-options">
+    
+              <label class="edgeai-login-remember">
+                <input
+                  id="edgeaiLoginRemember"
+                  name="remember"
+                  type="checkbox"
+                  checked
+                  disabled
+                >
+                <span>Lembrar de mim</span>
+              </label>
+    
+              <button
+                id="edgeaiLoginForgotPassword"
+                class="edgeai-login-text-button"
+                type="button"
+                disabled
+              >
+                Esqueci minha senha?
+              </button>
+    
+            </div>
+    
+            <!-- ERRO GERAL -->
+            <p
+              id="edgeaiLoginError"
+              class="edgeai-login-error"
+              role="alert"
+              hidden
+            ></p>
+    
+            <!-- ESTADO DE CARREGAMENTO -->
+            <p
+              id="edgeaiLoginStatus"
+              class="edgeai-login-status"
+              role="status"
+              aria-live="polite"
+              hidden
+            ></p>
+    
+            <!-- ENTRAR -->
+            <button
+              id="edgeaiLoginSubmit"
+              class="edgeai-login-submit"
+              type="submit"
+              disabled
+            >
+              <span aria-hidden="true">➜</span>
+              <span>Entrar</span>
+            </button>
+    
+          </form>
+    
+          <!-- DIVISÓRIA -->
+          <div class="edgeai-login-divider">
+            <span>ou continue com</span>
+          </div>
+    
+          <!-- LOGIN GOOGLE -->
+          <button
+            id="edgeaiLoginGoogle"
+            class="edgeai-login-google"
+            type="button"
+            disabled
+          >
+            <span
+              class="edgeai-google-mark"
+              aria-hidden="true"
+            >G</span>
+    
+            <span>Entrar com Google</span>
+          </button>
+    
+          <!-- CADASTRO -->
+          <p class="edgeai-login-register">
+            Ainda não tem uma conta?
+    
+            <button
+              id="edgeaiLoginCreateAccount"
+              class="edgeai-login-text-button"
+              type="button"
+              disabled
+            >
+              Criar conta
+            </button>
+          </p>
+    
+          <!-- PRIVACIDADE -->
+          <footer class="edgeai-login-privacy">
+    
+            <span
+              class="edgeai-login-privacy-icon"
+              aria-hidden="true"
+            >♙</span>
+    
+            <div>
+              <strong>
+                Seus projetos são privados e seguros.
+              </strong>
+    
+              <p>
+                Acesse seu espaço de trabalho, histórico
+                de conversas e arquivos técnicos
+                com privacidade.
+              </p>
+            </div>
+    
+          </footer>
+    
+        </div>
+    
+      </section>
+    
+    </main>
+    <!-- fim -->
+    
     <div class="site-brand">
       <div class="brand-icon" aria-hidden="true">🤖</div>
       <div><h1>EDGE <span>AI</span></h1><p>Hardware • Sistemas Embarcados • Eletrônica</p></div>
