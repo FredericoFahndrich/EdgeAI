@@ -297,6 +297,836 @@
   @media (prefers-reduced-motion:reduce) {
     *,*::before,*::after { scroll-behavior:auto !important;animation-duration:.01ms !important;transition-duration:.01ms !important; }
   }
+
+    
+/* =========================================
+   EDGE AI - LOGIN SCREEN
+   Etapa 3: Estilização e responsividade
+   ========================================= */
+
+#edgeaiLoginScreen {
+  --login-bg: #060d20;
+  --login-panel: #101c37;
+  --login-input: #142442;
+  --login-blue: #079ff2;
+  --login-purple: #7938f5;
+  --login-text: #f4f7ff;
+  --login-muted: #a8bad8;
+  --login-border: #253d68;
+
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  grid-template-columns: minmax(0, 56%) minmax(0, 44%);
+  width: 100%;
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--login-bg);
+  color: var(--login-text);
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+  isolation: isolate;
+}
+
+#edgeaiLoginScreen[hidden] {
+  display: none !important;
+}
+
+#edgeaiLoginScreen *,
+#edgeaiLoginScreen *::before,
+#edgeaiLoginScreen *::after {
+  box-sizing: border-box;
+}
+
+/* ÁREA ESQUERDA */
+
+.edgeai-login-hero {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 100dvh;
+  padding:
+    clamp(30px, 3.3vw, 56px)
+    clamp(30px, 8.2vw, 140px)
+    68px;
+  background:
+    radial-gradient(
+      ellipse at 78% 45%,
+      rgba(16, 38, 120, 0.38),
+      transparent 65%
+    ),
+    linear-gradient(
+      135deg,
+      #050b19 0%,
+      #07132d 65%,
+      #09123c 100%
+    );
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.edgeai-login-hero-header,
+.edgeai-login-hero-content,
+.edgeai-login-hero-footer {
+  position: relative;
+  z-index: 2;
+}
+
+.edgeai-login-brand,
+.edgeai-login-card-brand {
+  display: flex;
+  align-items: center;
+  gap: 17px;
+}
+
+.edgeai-login-brand-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  width: 66px;
+  height: 66px;
+  border-radius: 19px;
+  font-size: 34px;
+  background: linear-gradient(
+    135deg,
+    #00aaff,
+    #3665fb 48%,
+    #7829f8
+  );
+  box-shadow: 0 9px 32px rgba(38, 91, 255, 0.3);
+}
+
+.edgeai-login-brand-name {
+  display: block;
+  color: #f4f7ff;
+  font-size: 37px;
+  font-weight: 750;
+  line-height: 1.1;
+  letter-spacing: -1.5px;
+  white-space: nowrap;
+}
+
+.edgeai-login-brand-name span {
+  background: linear-gradient(100deg, #02abff, #8941fa);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.edgeai-login-brand-info p,
+.edgeai-login-card-header > p {
+  color: var(--login-muted);
+  font-size: 15px;
+  line-height: 1.45;
+  margin: 6px 0 0;
+}
+
+.edgeai-login-hero-content {
+  max-width: 760px;
+  margin-top: 32px;
+}
+
+.edgeai-login-hero-content h1 {
+  max-width: 610px;
+  margin: 0;
+  font-size: clamp(35px, 3.05vw, 51px);
+  font-weight: 760;
+  line-height: 1.08;
+  letter-spacing: -1.5px;
+}
+
+.edgeai-login-gradient-text {
+  display: inline-block;
+  background: linear-gradient(
+    100deg,
+    #00aeff 5%,
+    #267bff 50%,
+    #9236f8 100%
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.edgeai-login-description {
+  max-width: 520px;
+  margin: 17px 0 0;
+  color: #c0cde3;
+  font-size: clamp(15px, 1.15vw, 19px);
+  line-height: 1.48;
+}
+
+.edgeai-login-features {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  width: 100%;
+  max-width: 760px;
+  margin: 24px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.edgeai-login-features li {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  color: #c6d1e9;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.edgeai-feature-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 41px;
+  width: 41px;
+  height: 41px;
+  border-radius: 13px;
+  color: #a7caff;
+  font-size: 20px;
+  background: linear-gradient(
+    145deg,
+    rgba(36, 77, 159, 0.6),
+    rgba(13, 25, 61, 0.75)
+  );
+  border: 1px solid rgba(94, 143, 255, 0.13);
+}
+
+/* ILUSTRAÇÃO INDEPENDENTE */
+
+.edgeai-login-artwork {
+  position: absolute;
+  z-index: 1;
+  left: 0;
+  right: 0;
+  bottom: clamp(105px, 14vh, 145px);
+  height: clamp(270px, 38vh, 390px);
+  pointer-events: none;
+  background-image:
+    linear-gradient(
+      to bottom,
+      rgba(4, 12, 31, 0.02),
+      rgba(4, 12, 31, 0) 65%,
+      rgba(4, 12, 31, 0.16)
+    ),
+    url(
+      "https://fredericofahndrich.github.io/EdgeAI/edgeai-login-artwork.webp"
+    );
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+/* MENSAGEM INFERIOR */
+
+.edgeai-login-hero-footer {
+  display: flex;
+  align-items: center;
+  gap: 19px;
+  align-self: flex-start;
+  max-width: 100%;
+  margin-top: auto;
+  padding: 19px 27px;
+  border: 1px solid rgba(78, 120, 226, 0.22);
+  border-radius: 13px;
+  background: rgba(6, 17, 46, 0.83);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(12px);
+}
+
+.edgeai-login-hero-footer > span {
+  color: #7845ff;
+  font-size: 30px;
+}
+
+.edgeai-login-hero-footer p {
+  margin: 0;
+  color: #c6d4ee;
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+.edgeai-login-hero-footer strong {
+  color: #76caff;
+  font-weight: 700;
+}
+
+/* ÁREA DIREITA */
+
+.edgeai-login-auth-area {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-width: 0;
+  min-height: 100dvh;
+  padding: 38px clamp(22px, 5vw, 90px);
+  border-left: 1px solid rgba(39, 69, 142, 0.5);
+  background:
+    radial-gradient(
+      ellipse at 100% 15%,
+      rgba(52, 35, 132, 0.18),
+      transparent 60%
+    ),
+    linear-gradient(145deg, #071227, #080f21);
+}
+
+.edgeai-login-card {
+  width: min(512px, 100%);
+  padding: clamp(24px, 2.5vw, 42px);
+  border: 1px solid rgba(70, 111, 238, 0.55);
+  border-radius: 24px;
+  background: linear-gradient(
+    155deg,
+    rgba(18, 36, 72, 0.9),
+    rgba(7, 18, 41, 0.87)
+  );
+  box-shadow:
+    0 18px 65px rgba(0, 0, 0, 0.26),
+    inset 0 1px 0 rgba(135, 165, 255, 0.04);
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+}
+
+/* IDENTIDADE DO FORMULÁRIO */
+
+.edgeai-login-card-header {
+  text-align: center;
+}
+
+.edgeai-login-card-brand {
+  justify-content: center;
+}
+
+.edgeai-login-card-brand .edgeai-login-brand-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  font-size: 29px;
+}
+
+.edgeai-login-card-brand .edgeai-login-brand-name {
+  font-size: 36px;
+}
+
+.edgeai-login-card-header > p {
+  margin-top: 8px;
+  font-size: 13px;
+}
+
+.edgeai-login-welcome {
+  margin: 27px 0 25px;
+  text-align: center;
+}
+
+.edgeai-login-welcome h2 {
+  margin: 0;
+  color: var(--login-text);
+  font-size: 23px;
+  font-weight: 700;
+}
+
+.edgeai-login-welcome p {
+  max-width: 365px;
+  margin: 7px auto 0;
+  color: var(--login-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* FORMULÁRIO */
+
+.edgeai-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.edgeai-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.edgeai-login-field > label {
+  color: #e2eafc;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.edgeai-login-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.edgeai-login-input-wrap input {
+  width: 100%;
+  height: 51px;
+  padding: 0 46px;
+  border: 1px solid rgba(65, 103, 179, 0.27);
+  border-radius: 12px;
+  outline: none;
+  background: rgba(21, 39, 75, 0.85);
+  color: var(--login-text);
+  font-size: 14px;
+  transition:
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.edgeai-login-input-wrap input::placeholder {
+  color: #8b9fbf;
+  opacity: 1;
+}
+
+.edgeai-login-input-wrap input:focus {
+  border-color: #168cff;
+  box-shadow: 0 0 0 3px rgba(8, 147, 255, 0.13);
+}
+
+.edgeai-login-input-icon {
+  position: absolute;
+  z-index: 1;
+  left: 16px;
+  color: #a9c7fc;
+  font-size: 19px;
+  pointer-events: none;
+}
+
+.edgeai-login-toggle-password {
+  position: absolute;
+  right: 10px;
+  display: grid;
+  place-items: center;
+  width: 35px;
+  height: 35px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #829aca;
+  font-size: 20px;
+}
+
+/* LEMBRAR DE MIM */
+
+.edgeai-login-options {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: -3px;
+}
+
+.edgeai-login-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: #e2eafc;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.edgeai-login-remember input {
+  width: 21px;
+  height: 21px;
+  margin: 0;
+  cursor: pointer;
+  accent-color: #098fff;
+}
+
+.edgeai-login-text-button {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #04b4ff;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.edgeai-login-text-button:not(:disabled):hover {
+  color: #77d7ff;
+  text-decoration: underline;
+}
+
+/* BOTÃO PRINCIPAL */
+
+.edgeai-login-submit {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 51px;
+  margin-top: 3px;
+  padding: 12px 18px;
+  border: 0;
+  border-radius: 13px;
+  background: linear-gradient(
+    105deg,
+    #079ff2 0%,
+    #2769ff 51%,
+    #792df6 100%
+  );
+  color: #fff;
+  font-size: 16px;
+  font-weight: 700;
+  box-shadow: 0 8px 25px rgba(20, 87, 240, 0.23);
+  transition:
+    transform 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.edgeai-login-submit:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 32px rgba(31, 94, 247, 0.34);
+}
+
+.edgeai-login-submit:not(:disabled):active {
+  transform: translateY(0);
+}
+
+/* DIVISÓRIA */
+
+.edgeai-login-divider {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 12px 0;
+  color: #94a7ca;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.edgeai-login-divider::before,
+.edgeai-login-divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: rgba(91, 130, 204, 0.15);
+}
+
+/* LOGIN GOOGLE */
+
+.edgeai-login-google {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 51px;
+  padding: 12px;
+  border: 1px solid rgba(69, 108, 182, 0.27);
+  border-radius: 13px;
+  background: rgba(23, 43, 82, 0.75);
+  color: #f3f7ff;
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    background 180ms ease,
+    border-color 180ms ease;
+}
+
+.edgeai-login-google:not(:disabled):hover {
+  background: rgba(34, 60, 110, 0.9);
+  border-color: rgba(90, 142, 245, 0.55);
+}
+
+.edgeai-google-mark {
+  font-family: Arial, sans-serif;
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+  background: conic-gradient(
+    #4285f4 0deg 100deg,
+    #34a853 100deg 175deg,
+    #fbbc05 175deg 240deg,
+    #ea4335 240deg 305deg,
+    #4285f4 305deg
+  );
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+/* CADASTRO */
+
+.edgeai-login-register {
+  margin: 24px 0 19px;
+  color: var(--login-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.edgeai-login-register button {
+  margin-left: 7px;
+}
+
+/* PRIVACIDADE */
+
+.edgeai-login-privacy {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 15px 12px;
+  border: 1px solid rgba(72, 109, 179, 0.22);
+  border-radius: 14px;
+  background: rgba(17, 35, 71, 0.49);
+}
+
+.edgeai-login-privacy-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 52px;
+  width: 52px;
+  height: 52px;
+  border-radius: 13px;
+  background: linear-gradient(
+    135deg,
+    rgba(36, 75, 168, 0.55),
+    rgba(16, 31, 78, 0.8)
+  );
+  color: #91baff;
+  font-size: 25px;
+}
+
+.edgeai-login-privacy strong {
+  display: block;
+  color: #f4f7ff;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.edgeai-login-privacy p {
+  margin: 6px 0 0;
+  color: #92a6c9;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ERROS, STATUS E ACESSIBILIDADE */
+
+.edgeai-login-field-error,
+.edgeai-login-error {
+  margin: 2px 0 0;
+  color: #ff8297;
+  font-size: 12px;
+}
+
+.edgeai-login-status {
+  margin: 2px 0;
+  color: #a4d9ff;
+  font-size: 12px;
+}
+
+#edgeaiLoginScreen button:focus-visible,
+#edgeaiLoginScreen input:focus-visible {
+  outline: 2px solid #65bdff;
+  outline-offset: 3px;
+}
+
+/* Mantém a aparência durante a etapa visual.
+   As ações continuam desativadas no HTML. */
+
+#edgeaiLoginScreen button:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+#edgeaiLoginScreen input:disabled {
+  opacity: 1;
+  cursor: not-allowed;
+}
+
+/* TABLET / NOTEBOOK */
+
+@media (max-width: 1200px) {
+  #edgeaiLoginScreen {
+    grid-template-columns: minmax(0, 53%) minmax(0, 47%);
+  }
+
+  .edgeai-login-hero {
+    padding: 34px 34px 45px;
+  }
+
+  .edgeai-login-hero-content {
+    margin-top: 30px;
+  }
+
+  .edgeai-login-hero-content h1 {
+    font-size: clamp(32px, 3.8vw, 45px);
+  }
+
+  .edgeai-login-features {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-width: 480px;
+  }
+
+  .edgeai-login-artwork {
+    height: 33vh;
+    bottom: 115px;
+  }
+
+  .edgeai-login-auth-area {
+    padding: 26px 22px;
+  }
+
+  .edgeai-login-card {
+    padding: 27px;
+  }
+}
+
+/* SMARTPHONES E TABLETS ESTREITOS */
+
+@media (max-width: 880px) {
+  #edgeaiLoginScreen {
+    display: block;
+    height: 100dvh;
+  }
+
+  .edgeai-login-hero {
+    display: none;
+  }
+
+  .edgeai-login-auth-area {
+    min-height: 100dvh;
+    padding: 28px 18px;
+    border-left: 0;
+    align-items: center;
+  }
+
+  .edgeai-login-card {
+    width: min(490px, 100%);
+    padding: 28px;
+    border-radius: 20px;
+  }
+}
+
+@media (max-width: 520px) {
+  .edgeai-login-auth-area {
+    padding: 14px;
+  }
+
+  .edgeai-login-card {
+    padding: 25px 20px;
+    border-radius: 17px;
+  }
+
+  .edgeai-login-card-brand .edgeai-login-brand-name {
+    font-size: 29px;
+  }
+
+  .edgeai-login-card-brand .edgeai-login-brand-icon {
+    width: 49px;
+    height: 49px;
+    font-size: 25px;
+  }
+
+  .edgeai-login-card-header > p {
+    font-size: 11px;
+  }
+
+  .edgeai-login-welcome {
+    margin: 23px 0;
+  }
+
+  .edgeai-login-welcome h2 {
+    font-size: 21px;
+  }
+
+  .edgeai-login-options {
+    flex-wrap: wrap;
+  }
+
+  .edgeai-login-privacy {
+    gap: 11px;
+    padding: 12px 10px;
+  }
+
+  .edgeai-login-privacy-icon {
+    flex-basis: 43px;
+    width: 43px;
+    height: 43px;
+  }
+}
+
+/* TELAS DESKTOP COM POUCA ALTURA */
+
+@media (max-height: 790px) and (min-width: 881px) {
+  .edgeai-login-hero {
+    padding-top: 24px;
+    padding-bottom: 22px;
+  }
+
+  .edgeai-login-hero-content {
+    margin-top: 19px;
+  }
+
+  .edgeai-login-hero-content h1 {
+    font-size: clamp(31px, 2.8vw, 43px);
+  }
+
+  .edgeai-login-description {
+    font-size: 15px;
+  }
+
+  .edgeai-login-features {
+    margin-top: 15px;
+  }
+
+  .edgeai-login-artwork {
+    height: 35vh;
+    bottom: 80px;
+  }
+
+  .edgeai-login-hero-footer {
+    padding: 13px 18px;
+  }
+
+  .edgeai-login-hero-footer p {
+    font-size: 14px;
+  }
+
+  .edgeai-login-auth-area {
+    padding-top: 18px;
+    padding-bottom: 18px;
+  }
+
+  .edgeai-login-card {
+    padding-top: 22px;
+    padding-bottom: 22px;
+  }
+
+  .edgeai-login-welcome {
+    margin: 17px 0;
+  }
+
+  .edgeai-login-register {
+    margin: 16px 0 12px;
+  }
+}
+
+/* REDUÇÃO DE ANIMAÇÕES */
+
+@media (prefers-reduced-motion: reduce) {
+  #edgeaiLoginScreen *,
+  #edgeaiLoginScreen *::before,
+  #edgeaiLoginScreen *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+    
 </style>
 
 </head>
