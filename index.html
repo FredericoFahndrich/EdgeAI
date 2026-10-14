@@ -1127,6 +1127,16 @@
 }
 
     
+
+/* EDGE AI - Etapa 3A: identidade e elementos gráficos independentes */
+#edgeaiLoginScreen .edgeai-login-logo-img { display:block; object-fit:contain; padding:0; background:transparent; box-shadow:none; }
+#edgeaiLoginScreen .edgeai-login-logo-full { display:block; width:min(228px,100%); height:auto; object-fit:contain; }
+#edgeaiLoginScreen .edgeai-login-card-brand { gap:0; }
+#edgeaiLoginScreen .edgeai-feature-icon { flex-basis:45px; width:45px; height:45px; background:transparent; border:0; overflow:visible; }
+#edgeaiLoginScreen .edgeai-feature-icon img { width:100%; height:100%; object-fit:contain; }
+#edgeaiLoginScreen .edgeai-login-artwork { background-image:url("./assets/edgeai-login-artwork.webp"); background-size:contain; background-position:center bottom; }
+@media (max-width:1200px) { #edgeaiLoginScreen .edgeai-login-artwork { background-size:contain; } }
+@media (max-width:520px) { #edgeaiLoginScreen .edgeai-login-logo-full { width:min(200px,100%); } }
 </style>
 
 </head>
@@ -1156,10 +1166,7 @@
         <header class="edgeai-login-hero-header">
           <div class="edgeai-login-brand">
     
-            <span
-              class="edgeai-login-brand-icon"
-              aria-hidden="true"
-            >🤖</span>
+            <img class="edgeai-login-brand-icon edgeai-login-logo-img" src="./assets/edgeai-logo-icon.webp" width="66" height="66" alt="" decoding="async">
     
             <div class="edgeai-login-brand-info">
               <span class="edgeai-login-brand-name">
@@ -1192,30 +1199,22 @@
           <ul class="edgeai-login-features">
     
             <li>
-              <span class="edgeai-feature-icon" aria-hidden="true">
-                ◻
-              </span>
+              <span class="edgeai-feature-icon" aria-hidden="true"><img src="./assets/edgeai-feature-chat.webp" alt="" width="42" height="42" loading="lazy" decoding="async"></span>
               <span>Respostas técnicas com IA</span>
             </li>
     
             <li>
-              <span class="edgeai-feature-icon" aria-hidden="true">
-                ▦
-              </span>
+              <span class="edgeai-feature-icon" aria-hidden="true"><img src="./assets/edgeai-feature-hardware.webp" alt="" width="42" height="42" loading="lazy" decoding="async"></span>
               <span>Análise de hardware e firmware</span>
             </li>
     
             <li>
-              <span class="edgeai-feature-icon" aria-hidden="true">
-                ▤
-              </span>
+              <span class="edgeai-feature-icon" aria-hidden="true"><img src="./assets/edgeai-feature-pdf.webp" alt="" width="42" height="42" loading="lazy" decoding="async"></span>
               <span>Leitura e análise de PDFs técnicos</span>
             </li>
     
             <li>
-              <span class="edgeai-feature-icon" aria-hidden="true">
-                &lt;/&gt;
-              </span>
+              <span class="edgeai-feature-icon" aria-hidden="true"><img src="./assets/edgeai-feature-project.webp" alt="" width="42" height="42" loading="lazy" decoding="async"></span>
               <span>Apoio a projetos específicos</span>
             </li>
     
@@ -1251,14 +1250,7 @@
           <header class="edgeai-login-card-header">
     
             <div class="edgeai-login-card-brand">
-              <span
-                class="edgeai-login-brand-icon"
-                aria-hidden="true"
-              >🤖</span>
-    
-              <span class="edgeai-login-brand-name">
-                EDGE <span>AI</span>
-              </span>
+              <img class="edgeai-login-logo-full" src="./assets/edgeai-logo-full.webp" width="228" height="62" alt="EDGE AI" decoding="async">
             </div>
     
             <p>
