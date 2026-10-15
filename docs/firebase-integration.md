@@ -70,6 +70,8 @@ node test-ui.mjs
 
 42 cenários backend aprovados: RSA real local com chaves de teste, SQLite real/adaptador D1, OpenAI/R2 simulados. 8 cenários de coordenação UI aprovados em VM com DOM/HTTP simulados, incluindo inicialização do SDK, renovação sem perder rascunho, troca de conta concorrente e falha no logout. Sintaxe dos scripts clássicos verificada.
 
-Foi executada também uma prévia local no Chrome, com SDK/HTTP simulados: login, desbloqueio após sessão confirmada, lista de espaços e logout. Esses testes não equivalem a validação real do Worker publicado ou D1 remoto migrado. A conta real foi criada pelo titular no Firebase; nenhum vínculo administrativo foi executado nesta proposta.
+Foi executada também uma prévia local no Chrome, com SDK/HTTP simulados: login, desbloqueio após sessão confirmada, lista de espaços, mensagem/resposta e logout. Esses testes não equivalem a validação real do Worker publicado.
+
+Após confirmação explícita do titular, a migration 0001 foi aplicada no D1 remoto e um vínculo do titular com o usuário D1 existente foi inserido e consultado novamente. O UID real fica fora deste repositório. O vínculo mantém a propriedade existente do Projeto Solar. O titular escolheu preparar também os outros três UIDs antes do corte: Worker e Pages continuam nas versões anteriores até concluir essa preparação. Não houve deploy ou merge.
 
 Referência: https://firebase.google.com/docs/auth/admin/verify-id-tokens
