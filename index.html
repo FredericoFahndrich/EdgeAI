@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 
 <head>
+  <script>if(location.origin === 'https://fredericofahndrich.github.io') location.replace('https://edgeai-backend.frederico-fahndrich.workers.dev/app');</script>
 
   <meta charset="UTF-8">
 
@@ -1267,9 +1268,8 @@
             </h2>
     
             <p>
-              Entre com sua conta Firebase.
-              O acesso ao chat será habilitado após
-              a integração segura com o servidor.
+              Entre com sua conta para acessar
+              suas conversas e projetos autorizados.
             </p>
     
           </div>
@@ -1597,7 +1597,7 @@ VERSÃO
 */
 
 const APP_VERSION =
-  "2.7.0";
+  "3.0.0";
 
 
 /*
@@ -2097,6 +2097,7 @@ UPLOAD DE PDF
 */
 
 async function uploadPdfFiles() {
+  const uploadGeneration = authGeneration;
 
   const files =
     Array.from(
@@ -2117,6 +2118,7 @@ async function uploadPdfFiles() {
   for (
     const file of files
   ) {
+    if (uploadGeneration !== authGeneration || !authUser) throw new Error("Sessão alterada.");
 
     if (files.length > 10 || file.size === 0 || file.size > 15 * 1024 * 1024) {
       throw new Error("Selecione até 10 PDFs, com no máximo 15 MB por arquivo.");
@@ -2132,7 +2134,7 @@ async function uploadPdfFiles() {
 
 
     const response =
-      await fetch(
+      await edgeaiFetch(
 
         BACKEND_URL +
         "/upload" + (currentScope === "public" ? "?mode=public" : ""),
@@ -2189,6 +2191,7 @@ async function uploadPdfFiles() {
     }
 
 
+    if (uploadGeneration !== authGeneration || !authUser) throw new Error("Sessão alterada.");
     uploadedFiles.push({
 
       id:
@@ -2310,50 +2313,16 @@ setInterval(()=>{
 },30000);
 
 async function apiJson(url, options = {}) {
-  const response = await fetch(url, {
+  const generation = authGeneration;
+  const response = await edgeaiFetch(url, {
     credentials: "include", cache: "no-store", ...options,
     headers: {...(options.body ? {"Content-Type":"application/json"} : {}), ...(options.headers || {})}
   });
   let data;
   try { data = await response.json(); } catch { throw new Error("Resposta inválida do servidor."); }
   if (!response.ok) throw new Error(data.error || "Falha de comunicação (HTTP " + response.status + ").");
+  if (generation !== authGeneration) throw new Error("Sessão alterada.");
   return data;
-}
-
-async function loginUser() {
-  if (!isWorkerOrigin) {
-    showNotice("Abra o EDGE AI em: " + BACKEND_URL + "/app");
-    return;
-  }
-  if (isSending) return;
-  const values = await askFields("Entrar no EDGE AI", [
-    {label:"Nome completo cadastrado",autocomplete:"username",max:150},
-    {label:"Chave individual de acesso",type:"password",autocomplete:"current-password",max:200}
-  ], "Entrar");
-  if (!values) return;
-  const [name,key] = values;
-  try {
-    const data = await apiJson(BACKEND_URL + "/auth/login", {
-      method: "POST", body: JSON.stringify({user_name:name.trim(),access_key:key.trim()})
-    });
-    authUser = data.user;
-    if (!visitorName) { visitorName = authUser.full_name; localStorage.setItem("edgeai_user_name",visitorName); }
-    updateVisitorNameDisplay();
-    await loadUserProjects();
-    updateAuthControls();
-    await switchWorkspace(availableProjects.length ? "project:" + availableProjects[0].id : "personal");
-  } catch(error) { showNotice("Não foi possível entrar: " + error.message); }
-}
-
-async function logoutUser() {
-  if (isSending || !await askConfirmation("Encerrar a sessão atual?")) return;
-  try { await apiJson(BACKEND_URL + "/auth/logout", {method:"POST"}); }
-  catch(error) { showNotice("Não foi possível sair: " + error.message); return; }
-  authUser = null;
-  availableProjects = [];
-  updateWorkspaceOptions();
-  updateAuthControls();
-  await switchWorkspace("public");
 }
 
 async function loadUserProjects() {
@@ -2369,7 +2338,7 @@ function updateWorkspaceOptions() {
   const add = (value,label) => {
     const el = document.createElement("option"); el.value=value; el.textContent=label; select.appendChild(el);
   };
-  add("public", "Chat público");
+
   if (authUser) {
     add("personal", "Minhas conversas");
     for (const project of availableProjects) add("project:" + project.id, project.name);
@@ -2567,6 +2536,7 @@ async function reloadProjectDocuments() {
 }
 
 async function uploadProjectDocuments() {
+  const uploadGeneration = authGeneration;
   const base = projectFilesBase();
   if (!base) { showNotice("Selecione um projeto autorizado."); return; }
   const input = document.getElementById("projectUploadFiles");
@@ -2576,11 +2546,12 @@ async function uploadProjectDocuments() {
   button.disabled = true;
   try {
     for (const file of files) {
+      if (uploadGeneration !== authGeneration || !authUser) return;
       if (file.size > 15 * 1024 * 1024 || file.size === 0) {
         throw new Error("Arquivo fora do limite de 15 MB: " + file.name);
       }
       const form = new FormData(); form.append("file", file);
-      const response = await fetch(base, {method:"POST",credentials:"include",body:form});
+      const response = await edgeaiFetch(base, {method:"POST",credentials:"include",body:form});
       const data = await response.json();
       if (!response.ok) throw new Error(file.name + ": " + (data.error || response.status));
     }
@@ -2608,6 +2579,8 @@ async function initWorkspace() {
 async function sendToBackend(
   text
 ) {
+  if (!authUser || !window.edgeaiFirebaseStatus.backendIntegrated) return;
+  const sendingGeneration = authGeneration;
   isSending = true;
   document.getElementById("workspaceSelect").disabled = true;
 
@@ -2647,6 +2620,7 @@ async function sendToBackend(
 
     const uploadedFiles =
       await uploadPdfFiles();
+    if (sendingGeneration !== authGeneration || !authUser) return;
 
 
     const fileIds =
@@ -2669,7 +2643,7 @@ async function sendToBackend(
     */
 
     const response =
-      await fetch(
+      await edgeaiFetch(
 
         BACKEND_URL +
         "/chat",
@@ -2774,6 +2748,7 @@ async function sendToBackend(
     --------------------------------------------------------
     */
 
+    if (sendingGeneration !== authGeneration || !authUser) return;
     apiHistory.push({
 
       role:
@@ -2851,7 +2826,7 @@ async function sendToBackend(
     if (currentScope !== "public") await reloadConversationList();
 
   } catch(error) {
-
+    if (sendingGeneration !== authGeneration || !authUser) return;
     console.error(
       "EDGE AI:",
       error
@@ -3176,7 +3151,7 @@ async function checkBackend() {
   try {
 
     const response =
-      await fetch(
+      await edgeaiFetch(
 
         BACKEND_URL +
         "/health",
@@ -3333,7 +3308,102 @@ INICIALIZAÇÃO
 */
 
 
-// Etapa 5B.2: identidade Firebase isolada da sessão e das permissões do Worker.
+// Chat authorization is granted only after the Worker validates a Firebase token.
+let authGeneration = 0;
+let authQueue = Promise.resolve();
+let firebaseSdk;
+let backendSessionExpires = 0;
+function gateChat(open) {
+  const screen = document.getElementById('edgeaiLoginScreen');
+  screen.hidden = open;
+  for (const parent of [screen.parentElement, document.body]) {
+    for (const child of parent.children) {
+      if (child !== screen && child !== screen.parentElement && child.tagName !== 'SCRIPT') {
+        child.inert = !open;
+        if (open) child.removeAttribute('aria-hidden'); else child.setAttribute('aria-hidden','true');
+      }
+    }
+  }
+}
+function lockChat() {
+  gateChat(false);
+  backendSessionExpires = 0;
+  if (window.edgeaiFirebaseStatus) window.edgeaiFirebaseStatus.backendIntegrated = false;
+  contentEpoch++;
+  authUser = null; availableProjects = []; messages = []; apiHistory = [];
+  conversationId = crypto.randomUUID(); currentScope = 'personal';
+  hasMoreMessages = false; nextBeforeMessage = null;
+  document.getElementById('input').value = '';
+  document.getElementById('pdfFiles').value = '';
+  document.getElementById('projectUploadFiles').value = '';
+  document.getElementById('conversationList')?.replaceChildren();
+  document.getElementById('projectFilesList')?.replaceChildren();
+  render(); refreshSelectedFiles(); updateAuthControls(); updateWorkspaceOptions();
+}
+async function edgeaiFetch(url, options) {
+  const response = await fetch(url, options);
+  if (response.status === 401 && String(url).startsWith(BACKEND_URL)) {
+    ++authGeneration;
+    lockChat();
+    document.getElementById('edgeaiLoginStatus').textContent='Sessão expirada. Use Reconectar ou entre novamente.';
+  }
+  return response;
+}
+async function syncFirebaseUser(user) {
+  const generation = ++authGeneration;
+  lockChat();
+  const status = document.getElementById('edgeaiLoginStatus');
+  status.hidden = false;
+  status.textContent = user ? 'Validando acesso no servidor...' : 'Entre para acessar suas conversas.';
+  authQueue = authQueue.catch(()=>{}).then(async()=>{
+    if (generation !== authGeneration) return;
+    if (!isWorkerOrigin) {
+      status.textContent='Para entrar, abra o endereço seguro do aplicativo.';
+      return;
+    }
+    if (!user) {
+      const response = await fetch(BACKEND_URL+'/auth/logout',{method:'POST',credentials:'include'});
+      if (!response.ok) throw new Error('Não foi possível revogar a sessão no servidor. Tente sair novamente.');
+      return;
+    }
+    const token = await user.getIdToken();
+    const response = await fetch(BACKEND_URL+'/auth/firebase',{
+      method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({idToken:token})
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Falha ao validar o acesso.');
+    if (generation !== authGeneration) return;
+    const check = await fetch(BACKEND_URL+'/auth/session',{credentials:'include',cache:'no-store'});
+    const session = await check.json();
+    if (!check.ok || !session.authenticated || session.user?.id !== data.user?.id) throw new Error('O navegador não confirmou a sessão.');
+    if (generation !== authGeneration) return;
+    authUser = session.user;
+    await loadUserProjects();
+    if (generation !== authGeneration) return;
+    await switchWorkspace('personal');
+    if (generation !== authGeneration) return;
+    backendSessionExpires = Date.parse(data.expires_at);
+    window.edgeaiFirebaseStatus.backendIntegrated = true;
+    updateAuthControls(); gateChat(true);
+  }).catch(error=>{
+    if (generation !== authGeneration) return;
+    lockChat(); status.hidden=false; status.textContent=error.message;
+  });
+  return authQueue;
+}
+async function logoutUser() {
+  ++authGeneration; lockChat();
+  await authQueue.catch(()=>{});
+  try {
+    const response = await fetch(BACKEND_URL+'/auth/logout',{method:'POST',credentials:'include'});
+    if (!response.ok) throw new Error('Falha ao revogar a sessão. Tente sair novamente.');
+    await firebaseSdk.signOut(window.edgeaiFirebase.auth);
+  } catch(error) {
+    const status=document.getElementById('edgeaiLoginStatus');status.hidden=false;status.textContent=error.message;
+  }
+}
+function loginUser() { gateChat(false); }
+
 function setupEdgeaiLoginForm() {
   const byId = id => document.getElementById("edgeaiLogin" + id);
   const form = byId("Form");
@@ -3346,7 +3416,11 @@ function setupEdgeaiLoginForm() {
   const feedback = byId("Status"), errorNode = byId("Error");
   let sdk, auth, busy = false, ready = false, persistenceReady = false;
   let persistenceVersion = 0;
-  const controls = [email, password, remember, toggle, submit, google];
+  const forgot=byId('ForgotPassword'), create=byId('CreateAccount');
+  const controls = [email, password, remember, toggle, submit, google, forgot, create];
+  const reconnect=document.createElement('button'); reconnect.type='button'; reconnect.className='edgeai-login-google';
+  reconnect.textContent='Reconectar'; logout.after(reconnect);
+  reconnect.onclick=()=>void syncFirebaseUser(auth.currentUser);
 
   // A tela permanece aberta mesmo após login; isto não é autorização de backend.
   byId("Screen").hidden = false;
@@ -3373,14 +3447,14 @@ function setupEdgeaiLoginForm() {
     controls.forEach(node => { node.disabled = busy || !ready || signedIn; });
     submit.disabled ||= !persistenceReady;
     google.disabled ||= !persistenceReady;
-    logout.hidden = !signedIn;
+    logout.hidden = !signedIn; reconnect.hidden = !signedIn;
     logout.disabled = busy || !ready;
     submit.querySelector("span:last-child").textContent = busy ? "Aguarde..." : "Entrar";
     window.edgeaiFirebaseStatus.authState = signedIn ? "signed-in" : "signed-out";
     if (busy) return;
     message(signedIn
-      ? "Login Firebase confirmado. O acesso ao chat ainda não está liberado; falta validar a identidade no servidor."
-      : ready ? "Entre com sua conta Firebase. O acesso ao chat permanece indisponível nesta etapa."
+      ? "Conta Firebase conectada. Use Reconectar para validar o acesso ou Sair para trocar de conta."
+      : ready ? "Entre com sua conta. Novos cadastros precisam de aprovação administrativa para acessar os dados."
       : "Carregando autenticação...");
   }
   function authError(error) {
@@ -3464,7 +3538,7 @@ function setupEdgeaiLoginForm() {
       } else if (action === "password") {
         await sdk.signInWithEmailAndPassword(auth, email.value.trim(), password.value);
       } else {
-        await sdk.signOut(auth);
+        await logoutUser();
       }
     } catch (error) { authError(error); }
     finally {
@@ -3485,6 +3559,22 @@ function setupEdgeaiLoginForm() {
     if (emailInvalid || passwordInvalid) { (emailInvalid ? email : password).focus(); return; }
     void run("password");
   });
+  forgot.addEventListener('click', async()=>{
+    if(busy || !ready) return;
+    if(!email.value.trim() || !email.validity.valid) {message('Informe seu e-mail.',true);return;}
+    busy=true;renderState();
+    try {await sdk.sendPasswordResetEmail(auth,email.value.trim());}
+    catch(error) {if(!['auth/user-not-found','auth/invalid-email'].includes(error.code)) {busy=false;renderState();authError(error);return;}}
+    busy=false;renderState();message('Se houver uma conta elegível, você receberá instruções de recuperação por e-mail.');
+  });
+  create.addEventListener('click', async()=>{
+    if(busy || !ready || auth.currentUser) return;
+    if(!email.value.trim() || !email.validity.valid || password.value.length<8) {message('Informe e-mail válido e senha com ao menos 8 caracteres. O cadastro não concede acesso aos projetos.',true);return;}
+    busy=true;renderState();
+    try {await sdk.createUserWithEmailAndPassword(auth,email.value.trim(),password.value);}
+    catch(error){authError(error);}
+    finally{busy=false;clearPassword();renderState();}
+  });
   google.addEventListener("click", () => { void run("google"); });
   logout.addEventListener("click", () => { void run("logout"); });
 
@@ -3493,7 +3583,13 @@ function setupEdgeaiLoginForm() {
     sdk = firebaseSdk;
     await auth.authStateReady();
     ready = true;
-    sdk.onAuthStateChanged(auth, () => { clearPassword(); clearError(); renderState(); });
+    firebaseSdk = sdk;
+    sdk.onIdTokenChanged(auth, user => { clearPassword(); clearError(); renderState(); void syncFirebaseUser(user); });
+    setInterval(()=>{
+      if(auth.currentUser && backendSessionExpires && Date.now() > backendSessionExpires-300000) {
+        void auth.currentUser.getIdToken(true).catch(()=>lockChat());
+      }
+    },60000);
     await applyPersistence();
   };
   window.edgeaiFirebaseLoginUnavailable = () => {
@@ -3507,7 +3603,7 @@ function setupEdgeaiLoginForm() {
 }
 
 window.edgeaiFirebaseStatus = { state: "loading", projectId: "edgeai-auth", backendIntegrated: false };
-document.documentElement.dataset.edgeaiLoginEtapa = "5B.2";
+document.documentElement.dataset.edgeaiLoginEtapa = "5C";
 setupEdgeaiLoginForm();
 
 updateVisitorNameDisplay();
@@ -3517,7 +3613,7 @@ render();
 refreshSelectedFiles();
 
 void checkBackend();
-void initWorkspace();
+// Firebase observer coordinates backend session initialization.
 
 </script>
 
@@ -3569,3 +3665,4 @@ void initWorkspace();
 </script>
 </body>
 </html>
+

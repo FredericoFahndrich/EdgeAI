@@ -1,0 +1,8 @@
+{
+  "name": "edgeai-integration-tests",
+  "private": true,
+  "scripts": {
+    "test": "node backend/test-integration.mjs && node test-ui.mjs"
+  },
+  "engines": {"node": ">=24"}
+}
