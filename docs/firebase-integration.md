@@ -68,7 +68,7 @@ node backend/test-integration.mjs
 node test-ui.mjs
 ```
 
-40 cenários backend aprovados: RSA real local com chaves de teste, SQLite real/adaptador D1, OpenAI/R2 simulados. 6 cenários de coordenação UI aprovados em VM com DOM/HTTP simulados, incluindo troca de conta concorrente e falha no logout. Sintaxe dos scripts clássicos verificada.
+42 cenários backend aprovados: RSA real local com chaves de teste, SQLite real/adaptador D1, OpenAI/R2 simulados. 8 cenários de coordenação UI aprovados em VM com DOM/HTTP simulados, incluindo inicialização do SDK, renovação sem perder rascunho, troca de conta concorrente e falha no logout. Sintaxe dos scripts clássicos verificada.
 
 Foi executada também uma prévia local no Chrome, com SDK/HTTP simulados: login, desbloqueio após sessão confirmada, lista de espaços e logout. Esses testes não equivalem a validação real do Worker publicado ou D1 remoto migrado. A conta real foi criada pelo titular no Firebase; nenhum vínculo administrativo foi executado nesta proposta.
 

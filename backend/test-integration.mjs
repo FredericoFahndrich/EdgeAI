@@ -23,6 +23,10 @@ const pair=await crypto.subtle.generateKey({name:'RSASSA-PKCS1-v1_5',modulusLeng
 const jwk=await crypto.subtle.exportKey('jwk',pair.publicKey);jwk.kid='test-key';
 let providerCalls=0,keyCalls=0;
 globalThis.fetch=async(url)=>{
+  if(String(url).startsWith('https://raw.githubusercontent.com/FredericoFahndrich/EdgeAI/')) {
+    assert.match(String(url),/\/EdgeAI\/[0-9a-f]{40}\/index\.html$/);
+    return new Response('<head><title>Fixture pinned frontend</title></head>');
+  }
   if(String(url).includes('/service_accounts/v1/jwk/')) {keyCalls++;return Response.json({keys:[jwk]},{headers:{'Cache-Control':'max-age=300'}});}
   providerCalls++;
   if(String(url).endsWith('/v1/files'))return Response.json({id:'file-fixture'});
@@ -46,12 +50,14 @@ async function token(uid='uid-owner',overrides={},head={}){
 let passed=0;async function check(name,fn){await fn();passed++;console.log('PASS '+name);}
 async function expect(path,opts,status){const r=await req(path,opts);assert.equal(r.status,status,await r.clone().text());return r;}
 await check('additive migration idempotent, preserves members and conversations',async()=>{assert.equal(db.prepare('SELECT count(*) n FROM project_members').get().n,2);assert.equal(db.prepare('SELECT count(*) n FROM conversations').get().n,3);});
+await check('app serves immutable frontend with correct asset base',async()=>{const r=await expect('/app',{},200);assert.match(await r.text(),/<base href="https:\/\/fredericofahndrich.github.io\/EdgeAI\/">/);assert.equal(r.headers.get('Cache-Control'),'no-store');});
 for(const path of ['/chat','/upload?mode=public','/projects','/me/conversations','/projects/prj_solar/files'])for(const guest of [false,true])await check('anonymous and guest denied '+path+' '+guest,async()=>{const before=providerCalls;await expect(path,{method:path==='/chat'||path.startsWith('/upload')?'POST':'GET',body:path==='/chat'?{message:'test',mode:'public'}:undefined,guest},401);assert.equal(providerCalls,before);});
 for(const [name,claims,head] of [['aud',{aud:'wrong'}],['issuer',{iss:'wrong'}],['expiry',{exp:1}],['future iat',{iat:9999999999}],['auth_time',{auth_time:9999999999}],['empty subject',{sub:''}],['provider',{firebase:{sign_in_provider:'custom'}}],['tenant',{firebase:{sign_in_provider:'google.com',tenant:'x'}}],['algorithm',{}, {alg:'HS256'}],['unknown key',{}, {kid:'unknown'}]]) await check('reject '+name,async()=>{await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-owner',claims,head)}},401);});
 await check('tampered signature rejected',async()=>{let t=await token();t=t.slice(0,-20)+'a'.repeat(20);await expect('/auth/firebase',{method:'POST',body:{idToken:t}},401);});
 await check('unapproved UID cannot claim by name/email/user_id',async()=>{await expect('/auth/firebase',{method:'POST',body:{idToken:await token('not-approved',{email:'owner@example.invalid',name:'Owner'}),user_id:'owner'}},403);assert.equal(db.prepare('SELECT count(*) n FROM user_sessions').get().n,0);});
 await check('cross origin exchange rejected',()=>expect('/auth/firebase',{method:'POST',origin:'https://fredericofahndrich.github.io',body:{idToken:'bad'}},403));
 const sessions={};for(const id of ['owner','editor','outsider'])await check('verified exchange '+id,async()=>{const r=await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-'+id)}},200);sessions[id]=r.headers.get('set-cookie').split(';')[0];assert.match(r.headers.get('set-cookie'),/HttpOnly; Secure; SameSite=Lax/);const s=await expect('/auth/session',{cookie:sessions[id]},200);assert.equal((await s.json()).user.id,id);});
+await check('authenticated former-public PDF upload uses backend owner',async()=>{const form=new FormData();form.append('file',new File(['%PDF-1.4 fixture'],'fixture.pdf',{type:'application/pdf'}));await expect('/upload?mode=public',{method:'POST',cookie:sessions.owner,raw:form},200);assert.equal(db.prepare('SELECT owner_key FROM edgeai_pdf_owners WHERE file_id=?').get('file-fixture').owner_key,'user:owner');});
 await check('public chat now owned by backend user',async()=>{await expect('/chat',{method:'POST',cookie:sessions.owner,body:{message:'Fixture',mode:'public',conversation_id:'new_personal'}},200);assert.equal(db.prepare('SELECT created_by_user_id FROM conversations WHERE id=?').get('new_personal').created_by_user_id,'owner');});
 await check('legacy guest conversation never adopted',()=>expect('/chat',{method:'POST',cookie:sessions.owner,body:{message:'Fixture',mode:'public',conversation_id:'legacy_guest'}},403));
 await check('personal read isolated',()=>expect('/me/conversations/private_owner/messages',{cookie:sessions.editor},404));
