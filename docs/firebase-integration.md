@@ -15,6 +15,8 @@
 
 ## Contrato de autenticação
 
+Atualização: o gerenciamento administrativo por e-mail e projeto está descrito em [Usuários e acessos](email-access-admin.md). Antes de publicar esta revisão, aplicar também a migration 0002. O painel prepara aprovações por e-mail verificado sem exigir coleta prévia de UIDs.
+
 `POST /auth/firebase` recebe `{idToken}` apenas na origem do Worker. Verifica assinatura RS256 com chaves públicas fixas Google, `kid`, issuer, audience `edgeai-auth`, subject, expiração, iat, auth_time e provedor Google/password. Tokens não são gravados nem registrados.
 
 Somente o par projeto/UID previamente aprovado em `edgeai_firebase_identities` pode gerar sessão. Nenhum nome, e-mail, parâmetro `user_id` ou cadastro Firebase concede identidade D1. Usuários precisam continuar ativos em `users`. Não existe endpoint público para aprovar vínculos.
@@ -68,7 +70,7 @@ node backend/test-integration.mjs
 node test-ui.mjs
 ```
 
-42 cenários backend aprovados: RSA real local com chaves de teste, SQLite real/adaptador D1, OpenAI/R2 simulados. 8 cenários de coordenação UI aprovados em VM com DOM/HTTP simulados, incluindo inicialização do SDK, renovação sem perder rascunho, troca de conta concorrente e falha no logout. Sintaxe dos scripts clássicos verificada.
+59 cenários backend aprovados: RSA real local com chaves de teste, SQLite real/adaptador D1, OpenAI/R2 simulados, administração de acessos e aprovação por e-mail verificado. 10 cenários de coordenação UI aprovados em VM com DOM/HTTP simulados, incluindo inicialização do SDK, renovação sem perder rascunho, troca de conta concorrente, limpeza do painel e falha no logout. Sintaxe dos scripts clássicos verificada.
 
 Foi executada também uma prévia local no Chrome, com SDK/HTTP simulados: login, desbloqueio após sessão confirmada, lista de espaços, mensagem/resposta e logout. Esses testes não equivalem a validação real do Worker publicado.
 

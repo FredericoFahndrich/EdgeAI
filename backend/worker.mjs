@@ -1,3 +1,120 @@
+// Administrator is the existing D1 identity, reached only through verified Firebase sessions.
+const EDGEAI_ADMIN_USER_ID = 'usr_frederico';
+function normalizedApprovalEmail(value) {
+  if (typeof value !== 'string' || value.length > 254) return null;
+  const email = value.trim().toLowerCase();
+  return /^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?\.[a-z]{2,63}$/.test(email) ? email : null;
+}
+async function claimApprovedEmail(env, claims) {
+  // A manual or revoked UID binding is never replaced through an email approval.
+  const known = await env.DB.prepare('SELECT user_id FROM edgeai_firebase_identities WHERE firebase_project=?1 AND firebase_uid=?2')
+    .bind(FIREBASE_PROJECT,claims.sub).first();
+  if (known || claims.email_verified !== true) return;
+  const email = normalizedApprovalEmail(claims.email);
+  if (!email) return;
+  const now = new Date().toISOString();
+  await env.DB.batch([
+    env.DB.prepare(`INSERT OR IGNORE INTO edgeai_firebase_identities
+      (firebase_project,firebase_uid,user_id,approved_by,approved_at)
+      SELECT ?1,?2,a.user_id,a.approved_by,a.approved_at FROM edgeai_email_approvals a
+      JOIN users u ON u.id=a.user_id WHERE a.email=?3 AND a.revoked_at IS NULL
+      AND a.claimed_uid IS NULL AND u.is_active=1`).bind(FIREBASE_PROJECT,claims.sub,email),
+    env.DB.prepare(`UPDATE edgeai_email_approvals SET claimed_uid=?1,claimed_at=?2
+      WHERE email=?3 AND revoked_at IS NULL AND claimed_uid IS NULL AND EXISTS
+      (SELECT 1 FROM edgeai_firebase_identities i WHERE i.firebase_project=?4
+      AND i.firebase_uid=?1 AND i.user_id=edgeai_email_approvals.user_id AND i.revoked_at IS NULL)`)
+      .bind(claims.sub,now,email,FIREBASE_PROJECT)
+  ]);
+}
+function adminAudit(env,actor,action,target,detail) {
+  return env.DB.prepare(`INSERT INTO edgeai_admin_audit(id,actor_user_id,action,target_user_id,detail,created_at)
+    VALUES(?1,?2,?3,?4,?5,?6)`).bind(crypto.randomUUID(),actor,action,target,JSON.stringify(detail),new Date().toISOString());
+}
+async function handleAdminAccess(request,env,url) {
+  if (!url.pathname.startsWith('/admin/')) return null;
+  const reply=(data,status=200)=>jsonResponse(request,data,status);
+  const actor=await getAuthenticatedUser(request,env);
+  if (!actor) return reply({error:'Autenticação necessária.'},401);
+  if (actor.id !== EDGEAI_ADMIN_USER_ID) return reply({error:'Acesso administrativo negado.'},403);
+  if ((request.method!=='GET' || request.headers.has('Origin')) && request.headers.get('Origin') !== url.origin) return reply({error:'Origem não autorizada.'},403);
+  if (url.pathname==='/admin/access' && request.method==='GET') {
+    const [users,projects,memberships]=await Promise.all([
+      env.DB.prepare(`SELECT u.id,u.full_name,u.is_active,a.email,a.revoked_at,a.claimed_at,
+        CASE WHEN i.firebase_uid IS NOT NULL AND i.revoked_at IS NULL THEN 1 ELSE 0 END AS linked
+        FROM users u LEFT JOIN edgeai_email_approvals a ON a.user_id=u.id
+        LEFT JOIN edgeai_firebase_identities i ON i.user_id=u.id ORDER BY u.full_name`).all(),
+      env.DB.prepare('SELECT id,name FROM projects ORDER BY name').all(),
+      env.DB.prepare('SELECT project_id,user_id,role FROM project_members ORDER BY project_id,user_id').all()
+    ]);
+    return reply({users:users.results,projects:projects.results,memberships:memberships.results});
+  }
+  if (!['POST','PATCH'].includes(request.method)) return reply({error:'Método não permitido.'},405);
+  if (!/^application\/json(?:\s*;|$)/i.test(request.headers.get('Content-Type')||'')) return reply({error:'Use application/json.'},415);
+  let body;
+  try {body=await readJsonBounded(request);} catch {return reply({error:'JSON inválido.'},400);}
+  if (!body || typeof body!=='object' || Array.isArray(body)) return reply({error:'Dados inválidos.'},400);
+  if (url.pathname==='/admin/users' && request.method==='POST') {
+    const email=normalizedApprovalEmail(body.email);
+    const existingId=body.existing_user_id;
+    if (!email || existingId!==undefined && (typeof existingId!=='string'||!/^usr_[a-zA-Z0-9_-]{1,100}$/.test(existingId))) return reply({error:'E-mail ou usuário inválido.'},400);
+    let user;
+    if (existingId) {
+      user=await env.DB.prepare('SELECT id,full_name FROM users WHERE id=?1').bind(existingId).first();
+      if (!user) return reply({error:'Usuário não encontrado.'},404);
+      if (user.id===EDGEAI_ADMIN_USER_ID) return reply({error:'A identidade do administrador permanece vinculada por UID.'},409);
+    } else {
+      if (typeof body.full_name!=='string' || !body.full_name.trim() || body.full_name.trim().length>150) return reply({error:'Informe o nome (até 150 caracteres).'},400);
+      user={id:'usr_'+crypto.randomUUID(),full_name:body.full_name.trim()};
+    }
+    const conflict=await env.DB.prepare('SELECT user_id FROM edgeai_email_approvals WHERE email=?1 OR user_id=?2').bind(email,user.id).first();
+    const linked=await env.DB.prepare('SELECT user_id FROM edgeai_firebase_identities WHERE user_id=?1').bind(user.id).first();
+    if (conflict || linked) return reply({error:'Usuário ou e-mail já possui aprovação/vínculo. Não será substituído.'},409);
+    const statements=[];
+    if (!existingId) statements.push(env.DB.prepare('INSERT INTO users(id,full_name,normalized_name,access_key_hash,is_active) VALUES(?1,?2,?3,?4,1)')
+      .bind(user.id,user.full_name,'firebase-'+user.id,'!firebase-only'));
+    statements.push(env.DB.prepare('INSERT INTO edgeai_email_approvals(email,user_id,approved_by,approved_at) VALUES(?1,?2,?3,?4)')
+      .bind(email,user.id,actor.id,new Date().toISOString()));
+    statements.push(adminAudit(env,actor.id,'approve_email',user.id,{email,new_user:!existingId}));
+    try {await env.DB.batch(statements);} catch {return reply({error:'Conflito de cadastro. Atualize a lista antes de tentar novamente.'},409);}
+    return reply({user_id:user.id,status:'awaiting_verified_login'},201);
+  }
+  const match=url.pathname.match(/^\/admin\/users\/(usr_[a-zA-Z0-9_-]{1,100})\/(status|projects|approval)$/);
+  if (!match) return reply({error:'Rota não encontrada.'},404);
+  const [,target,action]=match;
+  if (target===EDGEAI_ADMIN_USER_ID) return reply({error:'Acesso do administrador protegido contra remoção pelo painel.'},409);
+  const user=await env.DB.prepare('SELECT id FROM users WHERE id=?1').bind(target).first();
+  if (!user) return reply({error:'Usuário não encontrado.'},404);
+  if (action==='status' && request.method==='PATCH') {
+    if (typeof body.is_active!=='boolean') return reply({error:'Estado inválido.'},400);
+    const statements=[env.DB.prepare('UPDATE users SET is_active=?1 WHERE id=?2').bind(body.is_active?1:0,target),
+      adminAudit(env,actor.id,'set_active',target,{is_active:body.is_active})];
+    // Reactivation never revives an old cookie.
+    if (!body.is_active) statements.push(env.DB.prepare('UPDATE user_sessions SET revoked_at=?1 WHERE user_id=?2 AND revoked_at IS NULL').bind(new Date().toISOString(),target));
+    await env.DB.batch(statements);return reply({updated:true});
+  }
+  if (action==='approval' && request.method==='PATCH') {
+    if (body.revoke!==true) return reply({error:'Somente revogação explícita é permitida.'},400);
+    const now=new Date().toISOString();
+    await env.DB.batch([
+      env.DB.prepare('UPDATE edgeai_email_approvals SET revoked_at=?1 WHERE user_id=?2 AND revoked_at IS NULL').bind(now,target),
+      env.DB.prepare('UPDATE edgeai_firebase_identities SET revoked_at=?1 WHERE user_id=?2 AND revoked_at IS NULL').bind(now,target),
+      env.DB.prepare('UPDATE user_sessions SET revoked_at=?1 WHERE user_id=?2 AND revoked_at IS NULL').bind(now,target),
+      adminAudit(env,actor.id,'revoke_identity',target,{})
+    ]);return reply({updated:true});
+  }
+  if (action==='projects' && request.method==='PATCH') {
+    if (typeof body.project_id!=='string'||!validatedProjectId(body.project_id) || !['editor','owner',null].includes(body.role)) return reply({error:'Projeto ou papel inválido.'},400);
+    const project=await env.DB.prepare('SELECT id FROM projects WHERE id=?1').bind(body.project_id).first();
+    if (!project) return reply({error:'Projeto não encontrado.'},404);
+    const statement=body.role===null
+      ? env.DB.prepare('DELETE FROM project_members WHERE project_id=?1 AND user_id=?2').bind(body.project_id,target)
+      : env.DB.prepare('INSERT INTO project_members(project_id,user_id,role) VALUES(?1,?2,?3) ON CONFLICT(project_id,user_id) DO UPDATE SET role=excluded.role').bind(body.project_id,target,body.role);
+    await env.DB.batch([statement,adminAudit(env,actor.id,'project_access',target,{project_id:body.project_id,role:body.role})]);
+    return reply({updated:true});
+  }
+  return reply({error:'Método não permitido.'},405);
+}
+
 // Fixed issuer/key source: never accept a token-supplied URL or project.
 const FIREBASE_PROJECT = 'edgeai-auth';
 const FIREBASE_JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
@@ -58,6 +175,7 @@ async function exchangeFirebaseSession(request, env) {
     const body = await readJsonBounded(request);
     claims = await verifyFirebaseIdToken(body?.idToken);
   } catch { return jsonResponse(request,{error:'Token Firebase inválido ou validação indisponível.'},401); }
+  await claimApprovedEmail(env, claims);
   const user = await env.DB.prepare(`SELECT u.id,u.full_name FROM edgeai_firebase_identities i
     JOIN users u ON u.id=i.user_id WHERE i.firebase_project=?1 AND i.firebase_uid=?2
     AND i.revoked_at IS NULL AND u.is_active=1`).bind(FIREBASE_PROJECT,claims.sub).first();
@@ -1637,7 +1755,7 @@ export default {
         const user = await getAuthenticatedUser(request, env);
         const response = jsonResponse(request, {
           authenticated: Boolean(user),
-          user: user || null
+          user: user ? {...user,is_admin:user.id===EDGEAI_ADMIN_USER_ID} : null
         });
         response.headers.set("Cache-Control", "no-store");
         return response;
@@ -1685,6 +1803,9 @@ export default {
           !await getAuthenticatedUser(request,env)) {
         return jsonResponse(request,{error:'Autenticação necessária.'},401);
       }
+
+      const adminResponse = await handleAdminAccess(request,env,url);
+      if (adminResponse) return adminResponse;
 
       // GESTÃO DE DOCUMENTOS DE PROJETO (R2)
       const documentResponse = await handleProjectDocuments(request, env, url);

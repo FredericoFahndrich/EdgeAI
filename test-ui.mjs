@@ -10,7 +10,7 @@ const nodes=new Map();const node=id=>{if(!nodes.has(id))nodes.set(id,{hidden:fal
 const screen=node('edgeaiLoginScreen');const shell=node('shell');screen.parentElement={children:[screen]};
 let revokeFails=false,deny=false,session=null,providerUser='owner',signedOut=false,hold,release;
 const sandbox={console,crypto,Date,Promise,document:{body:{children:[screen.parentElement,shell]},getElementById:node},window:{edgeaiFirebaseStatus:{},edgeaiFirebase:{auth:{}}},BACKEND_URL:'https://edgeai.test',isWorkerOrigin:true,
-render(){},refreshSelectedFiles(){},updateAuthControls(){},updateWorkspaceOptions(){},
+render(){},refreshSelectedFiles(){},updateAuthControls(){},updateWorkspaceOptions(){},clearAdminPanel(){},
 async loadUserProjects(){},async switchWorkspace(){},
 async fetch(url,options){
  if(url.endsWith('/auth/logout')) {if(revokeFails)return {ok:false};session=null;return {ok:true};}
@@ -38,4 +38,19 @@ await check('logout wipes cached private state and revokes server session',async
 await check('failed revocation never reports successful signout',async()=>{sandbox.window.didSignOut=false;revokeFails=true;await c.logoutUser();assert.equal(sandbox.window.didSignOut,false);assert.match(node('edgeaiLoginStatus').textContent,/revogar/);assert.equal(screen.hidden,false);revokeFails=false;});
 await check('account switch discards stale exchange before UI unlock',async()=>{hold=new Promise(r=>release=r);const first=c.syncFirebaseUser(user);await new Promise(r=>setImmediate(r));const second=c.syncFirebaseUser(null);hold=null;release();await Promise.all([first,second]);assert.equal(screen.hidden,false);assert.equal(session,null);assert.equal(vm.runInContext('authUser',c),null);});
 await check('HTTP 401 invalidates generation and locks chat',async()=>{await c.syncFirebaseUser(user);const generation=vm.runInContext('authGeneration',c);await c.edgeaiFetch('https://edgeai.test/chat',{});assert.equal(screen.hidden,false);assert(vm.runInContext('authGeneration',c)>generation);});
+await check('settings button follows server-confirmed admin role',async()=>{
+ sandbox.updateVisitorNameDisplay=()=>{};
+ vm.runInContext(html.slice(html.indexOf('function updateAuthControls()'),html.indexOf('async function editVisitorName()')),c);
+ vm.runInContext('authUser={id:"usr_regular",full_name:"Regular",is_admin:false};updateAuthControls();',c);
+ assert.equal(node('adminSettingsBtn').hidden,true);
+ vm.runInContext('authUser={id:"usr_frederico",full_name:"Administrator",is_admin:true};updateAuthControls();',c);
+ assert.equal(node('adminSettingsBtn').hidden,false);
+});
+await check('logout removes administrative personal data and closes panel',async()=>{
+ const adminCode=html.slice(html.indexOf('function adminMessage('),html.indexOf('async function openAdminSettings()'));
+ vm.runInContext(adminCode,c);
+ const dialog=node('adminDialog');dialog.open=true;dialog.close=()=>dialog.open=false;
+ node('adminEmail').value='private@example.invalid';node('adminUsers').textContent='Private list';
+ c.clearAdminPanel();assert.equal(dialog.open,false);assert.equal(node('adminEmail').value,'');assert.equal(node('adminUsers').textContent,'');
+});
 console.log(JSON.stringify({passed,scriptSyntax:true,scope:'DOM stubs and mocked HTTP; no real account/browser proof'}));

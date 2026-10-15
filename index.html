@@ -1140,6 +1140,7 @@
 #edgeaiLoginScreen .edgeai-login-artwork { background-image:url("./assets/edgeai-login-artwork.webp"); background-size:contain; background-position:center bottom; }
 @media (max-width:1200px) { #edgeaiLoginScreen .edgeai-login-artwork { background-size:contain; } }
 @media (max-width:520px) { #edgeaiLoginScreen .edgeai-login-logo-full { width:min(200px,100%); } }
+.admin-dialog{width:min(1000px,94vw);max-height:88dvh;overflow:auto;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:18px;padding:24px}.admin-dialog::backdrop{background:rgba(0,0,0,.75)}.admin-dialog h2{margin-top:0}.admin-dialog label{display:flex;flex-direction:column;gap:5px}.admin-form{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin:16px 0}.admin-dialog input,.admin-dialog select{color:var(--text);background:var(--bg-2);border:1px solid var(--border);padding:8px;border-radius:8px;max-width:100%}.admin-user{padding:16px 0;border-top:1px solid var(--border)}.admin-user h3{margin:0}.admin-user p{overflow-wrap:anywhere}.admin-user .actions-row{display:flex;flex-wrap:wrap;gap:8px}.admin-dialog button{white-space:normal}.admin-dialog [role=status]{color:var(--muted)}
 </style>
 
 </head>
@@ -1516,7 +1517,7 @@
         <button class="nav-btn" type="button" onclick="openSidebarSection('workspacePanel')"><span class="nav-symbol" aria-hidden="true">▱</span>Projetos e conversas</button>
         <button class="nav-btn" type="button" onclick="openSidebarSection('pdfPanel')"><span class="nav-symbol" aria-hidden="true">▧</span>Arquivos PDF</button>
         <button class="nav-btn" type="button" onclick="openSidebarSection('authPanel')"><span class="nav-symbol" aria-hidden="true">⚙</span>Conta e acesso</button>
-      </nav>
+      <button id="adminSettingsBtn" class="nav-btn" type="button" onclick="openAdminSettings()" hidden>⚙ Configurações · usuários e acessos</button></nav>
       <div class="sidebar-divider"></div>
       <section class="panel-block" id="workspacePanel">
         <span class="label">Espaço de trabalho</span>
@@ -1588,6 +1589,17 @@
     </main>
   </div>
 
+<dialog id="adminDialog" class="admin-dialog" aria-labelledby="adminTitle">
+  <div class="actions-row"><h2 id="adminTitle">Configurações · usuários e acessos</h2><button type="button" class="mini-btn" onclick="document.getElementById('adminDialog').close()">Fechar</button><button type="button" class="mini-btn" onclick="refreshAdminSettings()">Atualizar</button></div>
+  <p>Aprove um e-mail para uma conta nova ou vincule-o explicitamente a um usuário existente. Para entrar, o e-mail precisa ser verificado. Os acessos aos projetos são definidos separadamente.</p>
+  <form id="adminApprovalForm" class="admin-form">
+    <label>Usuário existente ou novo<select id="adminExisting"><option value="">Criar novo usuário</option></select></label>
+    <label>Nome do novo usuário<input id="adminName" maxlength="150" autocomplete="off"></label>
+    <label>E-mail autorizado<input id="adminEmail" type="email" maxlength="254" required autocomplete="off"></label>
+    <button id="adminApprove" type="submit" class="mini-btn">Aprovar e-mail</button>
+  </form>
+  <p id="adminStatus" role="status" aria-live="polite"></p><div id="adminUsers"></div>
+</dialog>
 <script>
 
 /*
@@ -2240,6 +2252,7 @@ function updateAuthControls() {
     : (isWorkerOrigin ? "Visitante não autenticado" : "Para projetos privados, abra o site pela rota /app do Worker.");
   document.getElementById("loginBtn").hidden = Boolean(authUser);
   document.getElementById("logoutBtn").hidden = !authUser;
+  document.getElementById("adminSettingsBtn").hidden = !authUser?.is_admin;
   updateVisitorNameDisplay();
   document.getElementById("editNameBtn").hidden = Boolean(authUser);
 }
@@ -3308,6 +3321,96 @@ INICIALIZAÇÃO
 */
 
 
+function adminMessage(text) {document.getElementById('adminStatus').textContent=text;}
+function clearAdminPanel() {
+  const dialog=document.getElementById('adminDialog');
+  if (dialog.open) dialog.close();
+  document.getElementById('adminUsers').replaceChildren();
+  document.getElementById('adminEmail').value='';
+  document.getElementById('adminName').value='';
+  document.getElementById('adminExisting').replaceChildren();
+  adminMessage('');
+}
+async function openAdminSettings() {
+  if (!authUser?.is_admin) return;
+  const dialog=document.getElementById('adminDialog');
+  if (!dialog.open) dialog.showModal();
+  await refreshAdminSettings();
+}
+async function adminChange(path,body,confirmation) {
+  if (!authUser?.is_admin) return;
+  const generation=authGeneration;
+  if (confirmation && !await askConfirmation(confirmation)) return;
+  if (generation!==authGeneration || !authUser?.is_admin) return;
+  try {
+    await apiJson(BACKEND_URL+path,{method:'PATCH',body:JSON.stringify(body)});
+    await refreshAdminSettings();adminMessage('Alteração salva.');
+  } catch(error) {if(generation===authGeneration)adminMessage(error.message);}
+}
+async function refreshAdminSettings() {
+  if (!authUser?.is_admin) return;
+  const generation=authGeneration;
+  adminMessage('Carregando usuários e acessos...');
+  try {
+    const data=await apiJson(BACKEND_URL+'/admin/access');
+    if (generation!==authGeneration || !authUser?.is_admin) return;
+    const list=document.getElementById('adminUsers'),existing=document.getElementById('adminExisting');
+    const selected=existing.value;
+    existing.replaceChildren(new Option('Criar novo usuário',''));
+    for(const user of data.users)if(user.id!==authUser.id)existing.add(new Option(user.full_name,user.id));
+    if([...existing.options].some(o=>o.value===selected))existing.value=selected;
+    document.getElementById('adminName').disabled=Boolean(existing.value);
+    list.replaceChildren();
+    const button=(text,fn)=>{const b=document.createElement('button');b.type='button';b.className='mini-btn';b.textContent=text;b.onclick=fn;return b;};
+    for(const user of data.users) {
+      const row=document.createElement('section');row.className='admin-user';
+      const name=document.createElement('h3');name.textContent=user.full_name;
+      const identity=document.createElement('p');
+      const state=user.linked?'Identidade vinculada':user.revoked_at?'Aprovação revogada':user.email?'Aguardando login com e-mail verificado':'Sem e-mail aprovado';
+      identity.textContent=(user.email||(user.linked?'Vínculo direto por UID':'E-mail não cadastrado'))+' · '+state+' · '+(user.is_active?'Ativo':'Suspenso');
+      row.append(name,identity);
+      const roles=document.createElement('p');
+      roles.textContent='Projetos: '+(data.memberships.filter(m=>m.user_id===user.id).map(m=>(data.projects.find(p=>p.id===m.project_id)?.name||m.project_id)+' ('+m.role+')').join(', ')||'nenhum');row.append(roles);
+      if(user.id===authUser.id) {
+        const note=document.createElement('p');note.textContent='Administrador — acesso protegido contra remoção pelo painel.';row.append(note);
+      } else {
+        const actions=document.createElement('div');actions.className='actions-row';
+        const project=document.createElement('select');project.setAttribute('aria-label','Projeto para '+user.full_name);
+        for(const item of data.projects)project.add(new Option(item.name,item.id));
+        const role=document.createElement('select');role.setAttribute('aria-label','Permissão para '+user.full_name);
+        role.add(new Option('Editor','editor'));role.add(new Option('Proprietário','owner'));
+        const grant=button('Salvar acesso',()=>adminChange('/admin/users/'+user.id+'/projects',{project_id:project.value,role:role.value},'Dar acesso de '+role.options[role.selectedIndex].text+' a '+user.full_name+' em '+project.options[project.selectedIndex]?.text+'?'));
+        const remove=button('Remover acesso',()=>adminChange('/admin/users/'+user.id+'/projects',{project_id:project.value,role:null},'Remover o acesso de '+user.full_name+' ao projeto selecionado? Os dados serão preservados.'));
+        grant.disabled=remove.disabled=!data.projects.length;
+        actions.append(project,role,grant,remove,
+          button(user.is_active?'Suspender usuário':'Reativar usuário',()=>adminChange('/admin/users/'+user.id+'/status',{is_active:!user.is_active},(user.is_active?'Suspender':'Reativar')+' o acesso de '+user.full_name+' ao EDGE AI?')));
+        if(user.email || user.linked)actions.append(button('Revogar identidade',()=>adminChange('/admin/users/'+user.id+'/approval',{revoke:true},'Revogar a identidade de '+user.full_name+' e encerrar suas sessões? O vínculo não será substituído automaticamente.')));
+        row.append(actions);
+      }
+      list.append(row);
+    }
+    adminMessage('Aprovar e-mail permite entrar. O acesso a cada projeto é definido abaixo. Nenhum e-mail de convite é enviado.');
+  } catch(error) {if(generation===authGeneration)adminMessage(error.message);}
+}
+document.getElementById('adminExisting').addEventListener('change',event=>{
+  document.getElementById('adminName').disabled=Boolean(event.target.value);
+});
+document.getElementById('adminApprovalForm').addEventListener('submit',async event=>{
+  event.preventDefault();
+  if(!authUser?.is_admin)return;
+  const generation=authGeneration,button=document.getElementById('adminApprove');button.disabled=true;
+  const existing=document.getElementById('adminExisting').value;
+  const body={email:document.getElementById('adminEmail').value.trim(),
+    ...(existing?{existing_user_id:existing}:{full_name:document.getElementById('adminName').value.trim()})};
+  try {
+    await apiJson(BACKEND_URL+'/admin/users',{method:'POST',body:JSON.stringify(body)});
+    if(generation!==authGeneration)return;
+    document.getElementById('adminEmail').value='';document.getElementById('adminName').value='';
+    await refreshAdminSettings();adminMessage('E-mail aprovado. O usuário deve entrar com esse e-mail verificado. Defina abaixo os projetos permitidos.');
+  }catch(error){if(generation===authGeneration)adminMessage(error.message);}
+  finally{button.disabled=false;}
+});
+
 // Chat authorization is granted only after the Worker validates a Firebase token.
 let authGeneration = 0;
 let authQueue = Promise.resolve();
@@ -3328,6 +3431,7 @@ function gateChat(open) {
 }
 function lockChat() {
   gateChat(false);
+  clearAdminPanel();
   backendSessionExpires = 0;
   backendFirebaseUid = null;
   if (window.edgeaiFirebaseStatus) window.edgeaiFirebaseStatus.backendIntegrated = false;
@@ -3418,13 +3522,15 @@ function setupEdgeaiLoginForm() {
   const remember = byId("Remember"), toggle = byId("TogglePassword");
   const submit = byId("Submit"), google = byId("Google"), logout = byId("Logout");
   const feedback = byId("Status"), errorNode = byId("Error");
+  const verifyEmail=document.createElement('button');verifyEmail.type='button';verifyEmail.className='edgeai-login-google';verifyEmail.textContent='Enviar verificação de e-mail';logout.after(verifyEmail);
+  verifyEmail.onclick=async()=>{if(!auth.currentUser||busy)return;try{await sdk.sendEmailVerification(auth.currentUser);message('Verificação enviada. Abra o link recebido e depois use Reconectar.');}catch(error){authError(error);}};
   let sdk, auth, busy = false, ready = false, persistenceReady = false;
   let persistenceVersion = 0;
   const forgot=byId('ForgotPassword'), create=byId('CreateAccount');
   const controls = [email, password, remember, toggle, submit, google, forgot, create];
   const reconnect=document.createElement('button'); reconnect.type='button'; reconnect.className='edgeai-login-google';
   reconnect.textContent='Reconectar'; logout.after(reconnect);
-  reconnect.onclick=()=>void syncFirebaseUser(auth.currentUser);
+  reconnect.onclick=async()=>{try{if(auth.currentUser){await auth.currentUser.reload();await auth.currentUser.getIdToken(true);}await syncFirebaseUser(auth.currentUser);}catch(error){authError(error);}};
 
   // A tela permanece aberta mesmo após login; isto não é autorização de backend.
   byId("Screen").hidden = false;
@@ -3451,7 +3557,7 @@ function setupEdgeaiLoginForm() {
     controls.forEach(node => { node.disabled = busy || !ready || signedIn; });
     submit.disabled ||= !persistenceReady;
     google.disabled ||= !persistenceReady;
-    logout.hidden = !signedIn; reconnect.hidden = !signedIn;
+    logout.hidden = !signedIn; reconnect.hidden = !signedIn; verifyEmail.hidden = !signedIn || auth.currentUser.emailVerified;
     logout.disabled = busy || !ready;
     submit.querySelector("span:last-child").textContent = busy ? "Aguarde..." : "Entrar";
     window.edgeaiFirebaseStatus.authState = signedIn ? "signed-in" : "signed-out";
