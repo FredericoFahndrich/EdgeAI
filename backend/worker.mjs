@@ -1613,7 +1613,8 @@ export default {
       // FRONTEND
       if (request.method === "GET" && (url.pathname === "/app" || url.pathname === "/app/")) {
         try {
-          const frontendResponse = await fetch("https://fredericofahndrich.github.io/EdgeAI/");
+          // Pin the reviewed frontend so the Worker deploy is independent of Pages propagation.
+          const frontendResponse = await fetch("https://raw.githubusercontent.com/FredericoFahndrich/EdgeAI/fdc310366dcff043fd0a222d480f211ae7cd3634/index.html");
           if (!frontendResponse.ok) throw new Error("Frontend indisponível.");
 
           const html = (await frontendResponse.text()).replace('<head>', '<head><base href="https://fredericofahndrich.github.io/EdgeAI/">');
