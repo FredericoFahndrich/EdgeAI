@@ -3311,8 +3311,9 @@ INICIALIZAÇÃO
 // Chat authorization is granted only after the Worker validates a Firebase token.
 let authGeneration = 0;
 let authQueue = Promise.resolve();
-let firebaseSdk;
+let edgeaiAuthSdk;
 let backendSessionExpires = 0;
+let backendFirebaseUid = null;
 function gateChat(open) {
   const screen = document.getElementById('edgeaiLoginScreen');
   screen.hidden = open;
@@ -3328,6 +3329,7 @@ function gateChat(open) {
 function lockChat() {
   gateChat(false);
   backendSessionExpires = 0;
+  backendFirebaseUid = null;
   if (window.edgeaiFirebaseStatus) window.edgeaiFirebaseStatus.backendIntegrated = false;
   contentEpoch++;
   authUser = null; availableProjects = []; messages = []; apiHistory = [];
@@ -3350,8 +3352,9 @@ async function edgeaiFetch(url, options) {
   return response;
 }
 async function syncFirebaseUser(user) {
+  const refreshCurrentAccount = Boolean(user?.uid && user.uid === backendFirebaseUid && authUser);
   const generation = ++authGeneration;
-  lockChat();
+  if (!refreshCurrentAccount) lockChat();
   const status = document.getElementById('edgeaiLoginStatus');
   status.hidden = false;
   status.textContent = user ? 'Validando acesso no servidor...' : 'Entre para acessar suas conversas.';
@@ -3380,9 +3383,10 @@ async function syncFirebaseUser(user) {
     authUser = session.user;
     await loadUserProjects();
     if (generation !== authGeneration) return;
-    await switchWorkspace('personal');
+    if (!refreshCurrentAccount) await switchWorkspace('personal');
     if (generation !== authGeneration) return;
     backendSessionExpires = Date.parse(data.expires_at);
+    backendFirebaseUid = user.uid;
     window.edgeaiFirebaseStatus.backendIntegrated = true;
     updateAuthControls(); gateChat(true);
   }).catch(error=>{
@@ -3397,7 +3401,7 @@ async function logoutUser() {
   try {
     const response = await fetch(BACKEND_URL+'/auth/logout',{method:'POST',credentials:'include'});
     if (!response.ok) throw new Error('Falha ao revogar a sessão. Tente sair novamente.');
-    await firebaseSdk.signOut(window.edgeaiFirebase.auth);
+    await edgeaiAuthSdk.signOut(window.edgeaiFirebase.auth);
   } catch(error) {
     const status=document.getElementById('edgeaiLoginStatus');status.hidden=false;status.textContent=error.message;
   }
@@ -3583,7 +3587,7 @@ function setupEdgeaiLoginForm() {
     sdk = firebaseSdk;
     await auth.authStateReady();
     ready = true;
-    firebaseSdk = sdk;
+    edgeaiAuthSdk = sdk;
     sdk.onIdTokenChanged(auth, user => { clearPassword(); clearError(); renderState(); void syncFirebaseUser(user); });
     setInterval(()=>{
       if(auth.currentUser && backendSessionExpires && Date.now() > backendSessionExpires-300000) {

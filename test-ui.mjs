@@ -21,11 +21,19 @@ async fetch(url,options){
 const c=vm.createContext(sandbox);
 vm.runInContext(`let contentEpoch=0,authUser=null,availableProjects=[],messages=[],apiHistory=[],conversationId='',currentScope='',hasMoreMessages=false,nextBeforeMessage=null;`,c);
 vm.runInContext(code,c);
-vm.runInContext('firebaseSdk={async signOut(){window.didSignOut=true;}};',c);
 let passed=0;const check=async(name,fn)=>{await fn();passed++;console.log('PASS '+name);};
-const user={getIdToken:async()=>'fixture-token'};
+await check('SDK initialization wires logout outside callback scope',async()=>{
+ sandbox.setInterval=()=>{};
+ vm.runInContext('let auth,sdk,ready;function clearPassword(){}function clearError(){}function renderState(){}async function applyPersistence(){}',c);
+ const bootstrap=html.slice(html.indexOf('  window.edgeaiConnectFirebaseLogin = async'),html.indexOf('  window.edgeaiFirebaseLoginUnavailable ='));
+ vm.runInContext(bootstrap,c);
+ await sandbox.window.edgeaiConnectFirebaseLogin({authStateReady:async()=>{}},{onIdTokenChanged(){},async signOut(){sandbox.window.didSignOut=true;}});
+ assert.equal(vm.runInContext('typeof edgeaiAuthSdk.signOut',c),'function');
+});
+const user={uid:'fixture-uid',getIdToken:async()=>'fixture-token'};
 await check('unapproved Firebase user keeps UI locked',async()=>{deny=true;await c.syncFirebaseUser(user);assert.equal(screen.hidden,false);assert.equal(sandbox.window.edgeaiFirebaseStatus.backendIntegrated,false);});
 await check('verified session unlocks UI',async()=>{deny=false;await c.syncFirebaseUser(user);assert.equal(screen.hidden,true);assert.equal(vm.runInContext('authUser.id',c),'owner');});
+await check('same-account token refresh preserves conversation and draft',async()=>{vm.runInContext('messages=[{content:"keep"}];',c);node('input').value='unsent draft';await c.syncFirebaseUser(user);assert.equal(node('input').value,'unsent draft');assert.equal(vm.runInContext('messages[0].content',c),'keep');});
 await check('logout wipes cached private state and revokes server session',async()=>{vm.runInContext('messages=[{content:"secret"}];',c);await c.logoutUser();assert.equal(session,null);assert.equal(screen.hidden,false);assert.equal(vm.runInContext('messages.length',c),0);assert.equal(node('projectFilesList').textContent,'');assert.equal(sandbox.window.didSignOut,true);});
 await check('failed revocation never reports successful signout',async()=>{sandbox.window.didSignOut=false;revokeFails=true;await c.logoutUser();assert.equal(sandbox.window.didSignOut,false);assert.match(node('edgeaiLoginStatus').textContent,/revogar/);assert.equal(screen.hidden,false);revokeFails=false;});
 await check('account switch discards stale exchange before UI unlock',async()=>{hold=new Promise(r=>release=r);const first=c.syncFirebaseUser(user);await new Promise(r=>setImmediate(r));const second=c.syncFirebaseUser(null);hold=null;release();await Promise.all([first,second]);assert.equal(screen.hidden,false);assert.equal(session,null);assert.equal(vm.runInContext('authUser',c),null);});
