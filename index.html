@@ -11,6 +11,7 @@
   >
 
   <title>EDGE AI</title>
+  <link rel="icon" type="image/webp" href="./assets/edgeai-logo-icon.webp">
 
 
   <style>
@@ -1129,6 +1130,7 @@
     
 
 /* EDGE AI - Etapa 3A: identidade e elementos gráficos independentes */
+#edgeaiLoginScreen .edgeai-login-auth-area { align-items: safe center; }
 #edgeaiLoginScreen .edgeai-login-logo-img { display:block; object-fit:contain; padding:0; background:transparent; box-shadow:none; }
 #edgeaiLoginScreen .edgeai-login-logo-full { display:block; width:min(228px,100%); height:auto; object-fit:contain; }
 #edgeaiLoginScreen .edgeai-login-card-brand { gap:0; }
@@ -1154,7 +1156,6 @@
       id="edgeaiLoginScreen"
       class="edgeai-login-screen"
       aria-label="Acesso ao EDGE AI"
-      hidden
     >
     
       <!-- APRESENTAÇÃO / ÁREA ESQUERDA -->
@@ -1266,9 +1267,9 @@
             </h2>
     
             <p>
-              Acesse sua conta para continuar no seu
-              espaço de trabalho e conversar com
-              o assistente técnico.
+              Entre com sua conta Firebase.
+              O acesso ao chat será habilitado após
+              a integração segura com o servidor.
             </p>
     
           </div>
@@ -1440,6 +1441,8 @@
             <span>Entrar com Google</span>
           </button>
     
+          <button id="edgeaiLoginLogout" class="edgeai-login-google" style="margin-top:12px" type="button" hidden>Sair do Firebase</button>
+
           <!-- CADASTRO -->
           <p class="edgeai-login-register">
             Ainda não tem uma conta?
@@ -3330,420 +3333,183 @@ INICIALIZAÇÃO
 */
 
 
-/*
-============================================================
-EDGE AI - LOGIN
-ETAPA 4: COMPORTAMENTO DO FORMULÁRIO
-============================================================
-
-Nesta etapa:
-- Validação de e-mail e senha
-- Mostrar e ocultar senha
-- Preferência "Lembrar de mim"
-- Mensagens acessíveis
-- Controle de carregamento
-
-A autenticação Firebase será integrada
-na Etapa 5.
-
-Nenhuma sessão é criada por este código.
-============================================================
-*/
-
-function edgeaiSetLoginLoading(loading) {
-
-  const form = document.getElementById(
-    "edgeaiLoginForm"
-  );
-
-  if (!form) return;
-
-  const email = document.getElementById(
-    "edgeaiLoginEmail"
-  );
-
-  const password = document.getElementById(
-    "edgeaiLoginPassword"
-  );
-
-  const remember = document.getElementById(
-    "edgeaiLoginRemember"
-  );
-
-  const toggle = document.getElementById(
-    "edgeaiLoginTogglePassword"
-  );
-
-  const submit = document.getElementById(
-    "edgeaiLoginSubmit"
-  );
-
-  const status = document.getElementById(
-    "edgeaiLoginStatus"
-  );
-
-  const busy = Boolean(loading);
-
-  form.setAttribute("aria-busy", String(busy));
-
-  email.disabled = busy;
-  password.disabled = busy;
-  remember.disabled = busy;
-  toggle.disabled = busy;
-  submit.disabled = busy;
-
-  const label = submit.querySelector(
-    "span:last-child"
-  );
-
-  if (label) {
-    label.textContent = busy
-      ? "Entrando..."
-      : "Entrar";
-  }
-
-  status.textContent = busy
-    ? "Autenticando, aguarde..."
-    : "";
-
-  status.hidden = !busy;
-}
-
-
-/*
-============================================================
-INICIALIZAÇÃO DOS CONTROLES
-============================================================
-*/
-
+// Etapa 5B.2: identidade Firebase isolada da sessão e das permissões do Worker.
 function setupEdgeaiLoginForm() {
-
-  const form = document.getElementById(
-    "edgeaiLoginForm"
-  );
-
-  if (!form) {
-    console.warn(
-      "EDGE AI: formulário de login não encontrado."
-    );
-    return;
-  }
-
-  // Evita registrar os eventos duas vezes.
-  if (form.dataset.initialized === "true") {
-    return;
-  }
-
+  const byId = id => document.getElementById("edgeaiLogin" + id);
+  const form = byId("Form");
+  if (form.dataset.initialized === "true") return;
   form.dataset.initialized = "true";
-
-  const email = document.getElementById(
-    "edgeaiLoginEmail"
-  );
-
-  const password = document.getElementById(
-    "edgeaiLoginPassword"
-  );
-
-  const remember = document.getElementById(
-    "edgeaiLoginRemember"
-  );
-
-  const toggle = document.getElementById(
-    "edgeaiLoginTogglePassword"
-  );
-
-  const submit = document.getElementById(
-    "edgeaiLoginSubmit"
-  );
-
-  const emailError = document.getElementById(
-    "edgeaiLoginEmailError"
-  );
-
-  const passwordError = document.getElementById(
-    "edgeaiLoginPasswordError"
-  );
-
-  const generalError = document.getElementById(
-    "edgeaiLoginError"
-  );
-
-  const status = document.getElementById(
-    "edgeaiLoginStatus"
-  );
-
-  // O tratamento dos erros será feito por JS.
   form.noValidate = true;
+  const email = byId("Email"), password = byId("Password");
+  const remember = byId("Remember"), toggle = byId("TogglePassword");
+  const submit = byId("Submit"), google = byId("Google"), logout = byId("Logout");
+  const feedback = byId("Status"), errorNode = byId("Error");
+  let sdk, auth, busy = false, ready = false, persistenceReady = false;
+  let persistenceVersion = 0;
+  const controls = [email, password, remember, toggle, submit, google];
 
-  // Habilita os controles locais do formulário.
-  email.disabled = false;
-  password.disabled = false;
-  remember.disabled = false;
-  toggle.disabled = false;
-  submit.disabled = false;
+  // A tela permanece aberta mesmo após login; isto não é autorização de backend.
+  byId("Screen").hidden = false;
+  const screen = byId("Screen");
+  for (const parent of [screen.parentElement, document.body]) {
+    for (const child of parent.children) {
+      if (child !== screen && child !== screen.parentElement &&
+          child.tagName !== "SCRIPT") {
+        child.inert = true;
+        child.setAttribute("aria-hidden", "true");
+      }
+    }
+  }
 
-  // Google, cadastro e recuperação de senha
-  // permanecem desativados nesta etapa.
-
-
-  /*
-  ----------------------------------------------------------
-  PREFERÊNCIA LEMBRAR DE MIM
-  ----------------------------------------------------------
-  */
-
-  const rememberStorageKey =
-    "edgeai_login_remember";
-
+  function message(text, error = false) {
+    const node = error ? errorNode : feedback;
+    node.textContent = text;
+    node.hidden = !text;
+  }
+  function clearError() { message("", true); }
+  function renderState() {
+    const signedIn = Boolean(auth?.currentUser);
+    form.setAttribute("aria-busy", String(busy));
+    controls.forEach(node => { node.disabled = busy || !ready || signedIn; });
+    submit.disabled ||= !persistenceReady;
+    google.disabled ||= !persistenceReady;
+    logout.hidden = !signedIn;
+    logout.disabled = busy || !ready;
+    submit.querySelector("span:last-child").textContent = busy ? "Aguarde..." : "Entrar";
+    window.edgeaiFirebaseStatus.authState = signedIn ? "signed-in" : "signed-out";
+    if (busy) return;
+    message(signedIn
+      ? "Login Firebase confirmado. O acesso ao chat ainda não está liberado; falta validar a identidade no servidor."
+      : ready ? "Entre com sua conta Firebase. O acesso ao chat permanece indisponível nesta etapa."
+      : "Carregando autenticação...");
+  }
+  function authError(error) {
+    const messages = {
+      "auth/invalid-credential": "E-mail ou senha inválidos.",
+      "auth/wrong-password": "E-mail ou senha inválidos.",
+      "auth/user-not-found": "E-mail ou senha inválidos.",
+      "auth/invalid-email": "Informe um endereço de e-mail válido.",
+      "auth/user-disabled": "Esta conta está desativada.",
+      "auth/too-many-requests": "Muitas tentativas. Aguarde e tente novamente.",
+      "auth/network-request-failed": "Falha de conexão. Verifique sua rede e tente novamente.",
+      "auth/popup-closed-by-user": "Login com Google cancelado. Você pode tentar novamente.",
+      "auth/cancelled-popup-request": "A tentativa de login foi cancelada. Tente novamente.",
+      "auth/popup-blocked": "Permita pop-ups para este site e tente novamente.",
+      "auth/unauthorized-domain": "Este domínio ainda não está autorizado no Firebase.",
+      "auth/operation-not-allowed": "Este método de login ainda não está habilitado no Firebase.",
+      "auth/account-exists-with-different-credential": "Use o método de login já associado à sua conta.",
+      "auth/web-storage-unsupported": "O navegador bloqueou o armazenamento da sessão. Revise as configurações de privacidade."
+    };
+    message(messages[error?.code] || "Não foi possível concluir a autenticação. Tente novamente.", true);
+  }
+  function clearPassword() {
+    password.value = "";
+    password.type = "password";
+    toggle.setAttribute("aria-pressed", "false");
+    toggle.setAttribute("aria-label", "Mostrar senha");
+    toggle.title = "Mostrar senha";
+  }
   try {
-    const saved = localStorage.getItem(
-      rememberStorageKey
-    );
-
-    if (saved === "true" || saved === "false") {
-      remember.checked = saved === "true";
-    }
-
-  } catch (error) {
-    console.warn(
-      "EDGE AI: preferência local indisponível."
-    );
-  }
-
-  remember.addEventListener("change", () => {
-
+    const saved = localStorage.getItem("edgeai_login_remember");
+    if (saved === "true" || saved === "false") remember.checked = saved === "true";
+  } catch {}
+  async function applyPersistence() {
+    const version = ++persistenceVersion;
+    persistenceReady = false;
+    busy = true;
+    clearError();
+    renderState();
+    message("Preparando sessão...");
     try {
-      localStorage.setItem(
-        rememberStorageKey,
-        String(remember.checked)
-      );
-
-    } catch (error) {
-      console.warn(
-        "EDGE AI: não foi possível salvar a preferência."
-      );
+      await sdk.setPersistence(auth, remember.checked
+        ? sdk.browserLocalPersistence : sdk.browserSessionPersistence);
+      if (version === persistenceVersion) persistenceReady = true;
+    } catch (error) { authError(error); }
+    finally {
+      if (version === persistenceVersion) { busy = false; renderState(); }
     }
-
+  }
+  remember.addEventListener("change", () => {
+    try { localStorage.setItem("edgeai_login_remember", String(remember.checked)); } catch {}
+    if (ready && !busy) void applyPersistence();
   });
-
-
-  /*
-  ----------------------------------------------------------
-  MENSAGENS DE ERRO
-  ----------------------------------------------------------
-  */
-
-  function setFieldError(input, node, message) {
-
-    node.textContent = message || "";
-    node.hidden = !message;
-
-    if (message) {
-      input.setAttribute("aria-invalid", "true");
-    } else {
-      input.removeAttribute("aria-invalid");
-    }
-
-  }
-
-  function clearFeedback() {
-
-    generalError.textContent = "";
-    generalError.hidden = true;
-
-    status.textContent = "";
-    status.hidden = true;
-
-  }
-
-
-  /*
-  ----------------------------------------------------------
-  VALIDAÇÃO DE E-MAIL
-  ----------------------------------------------------------
-  */
-
-  function validateEmail() {
-
-    const value = email.value.trim();
-
-    let message = "";
-
-    if (!value) {
-
-      message = "Informe seu e-mail.";
-
-    } else if (
-      value.length > 254 ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ||
-      !email.validity.valid
-    ) {
-
-      message = "Informe um endereço de e-mail válido.";
-
-    }
-
-    setFieldError(
-      email,
-      emailError,
-      message
-    );
-
-    return !message;
-  }
-
-
-  /*
-  ----------------------------------------------------------
-  VALIDAÇÃO DE SENHA
-  ----------------------------------------------------------
-  */
-
-  function validatePassword() {
-
-    let message = "";
-
-    if (!password.value) {
-      message = "Informe sua senha.";
-    }
-
-    setFieldError(
-      password,
-      passwordError,
-      message
-    );
-
-    return !message;
-  }
-
-
-  /*
-  ----------------------------------------------------------
-  VALIDAÇÃO DURANTE A DIGITAÇÃO
-  ----------------------------------------------------------
-  */
-
-  email.addEventListener("blur", validateEmail);
-
-  password.addEventListener(
-    "blur",
-    validatePassword
-  );
-
-  email.addEventListener("input", () => {
-
-    clearFeedback();
-
-    if (!emailError.hidden) {
-      validateEmail();
-    }
-
-  });
-
-  password.addEventListener("input", () => {
-
-    clearFeedback();
-
-    if (!passwordError.hidden) {
-      validatePassword();
-    }
-
-  });
-
-
-  /*
-  ----------------------------------------------------------
-  MOSTRAR / OCULTAR SENHA
-  ----------------------------------------------------------
-  */
-
   toggle.addEventListener("click", () => {
-
     const visible = password.type === "password";
-
-    password.type = visible
-      ? "text"
-      : "password";
-
-    toggle.setAttribute(
-      "aria-pressed",
-      String(visible)
-    );
-
-    toggle.setAttribute(
-      "aria-label",
-      visible ? "Ocultar senha" : "Mostrar senha"
-    );
-
-    toggle.title = visible
-      ? "Ocultar senha"
-      : "Mostrar senha";
-
+    password.type = visible ? "text" : "password";
+    toggle.setAttribute("aria-pressed", String(visible));
+    toggle.setAttribute("aria-label", visible ? "Ocultar senha" : "Mostrar senha");
+    toggle.title = visible ? "Ocultar senha" : "Mostrar senha";
   });
+  function fieldError(input, node, text) {
+    node.textContent = text;
+    node.hidden = !text;
+    if (text) input.setAttribute("aria-invalid", "true");
+    else input.removeAttribute("aria-invalid");
+  }
+  email.addEventListener("input", () => { clearError(); fieldError(email, byId("EmailError"), ""); });
+  password.addEventListener("input", () => { clearError(); fieldError(password, byId("PasswordError"), ""); });
 
-
-  /*
-  ----------------------------------------------------------
-  ENVIO DO FORMULÁRIO
-  ----------------------------------------------------------
-  */
-
+  // Invoca o popup diretamente no gesto do usuário: sem await antes de abri-lo.
+  async function run(action) {
+    if (!ready || busy || (action !== "logout" && (!persistenceReady || auth.currentUser))) return;
+    busy = true;
+    clearError();
+    renderState();
+    message(action === "logout" ? "Saindo do Firebase..." : "Autenticando no Firebase...");
+    try {
+      if (action === "google") {
+        const provider = new sdk.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+        await sdk.signInWithPopup(auth, provider);
+      } else if (action === "password") {
+        await sdk.signInWithEmailAndPassword(auth, email.value.trim(), password.value);
+      } else {
+        await sdk.signOut(auth);
+      }
+    } catch (error) { authError(error); }
+    finally {
+      clearPassword();
+      busy = false;
+      renderState();
+      if (!auth.currentUser) email.focus();
+      else logout.focus();
+    }
+  }
   form.addEventListener("submit", event => {
-
     event.preventDefault();
-
-    // Não envia credenciais ao backend nesta etapa.
-    clearFeedback();
-
-    const emailValid = validateEmail();
-    const passwordValid = validatePassword();
-
-    if (!emailValid) {
-
-      email.focus();
-      return;
-
-    }
-
-    if (!passwordValid) {
-
-      password.focus();
-      return;
-
-    }
-
-    // Normaliza espaços externos do e-mail.
-    email.value = email.value.trim();
-
-    // Nenhum login fictício será executado.
-    status.textContent =
-      "Formulário validado. " +
-      "A autenticação com Firebase será " +
-      "habilitada na próxima etapa.";
-
-    status.hidden = false;
-
+    if (!ready || busy || auth.currentUser) return;
+    const emailInvalid = !email.value.trim() || !email.validity.valid;
+    const passwordInvalid = !password.value;
+    fieldError(email, byId("EmailError"), emailInvalid ? "Informe um endereço de e-mail válido." : "");
+    fieldError(password, byId("PasswordError"), passwordInvalid ? "Informe sua senha." : "");
+    if (emailInvalid || passwordInvalid) { (emailInvalid ? email : password).focus(); return; }
+    void run("password");
   });
+  google.addEventListener("click", () => { void run("google"); });
+  logout.addEventListener("click", () => { void run("logout"); });
 
+  window.edgeaiConnectFirebaseLogin = async (firebaseAuth, firebaseSdk) => {
+    auth = firebaseAuth;
+    sdk = firebaseSdk;
+    await auth.authStateReady();
+    ready = true;
+    sdk.onAuthStateChanged(auth, () => { clearPassword(); clearError(); renderState(); });
+    await applyPersistence();
+  };
+  window.edgeaiFirebaseLoginUnavailable = () => {
+    ready = false;
+    busy = false;
+    renderState();
+    message("", false);
+    message("Não foi possível carregar a autenticação. Verifique a conexão e recarregue a página.", true);
+  };
+  renderState();
 }
 
-
-/*
-============================================================
-ATIVAR INTERAÇÕES DA ETAPA 4
-============================================================
-*/
-
-// Exportação explícita para diagnósticos no Console.
-window.edgeaiSetLoginLoading = edgeaiSetLoginLoading;
-window.setupEdgeaiLoginForm = setupEdgeaiLoginForm;
-
-// Permite identificar se a versão atualizada foi carregada.
-document.documentElement.dataset.edgeaiLoginEtapa = "4.1";
-
+window.edgeaiFirebaseStatus = { state: "loading", projectId: "edgeai-auth", backendIntegrated: false };
+document.documentElement.dataset.edgeaiLoginEtapa = "5B.2";
 setupEdgeaiLoginForm();
 
-  
 updateVisitorNameDisplay();
 
 render();
@@ -3767,12 +3533,12 @@ void initWorkspace();
     appId: "1:785839887578:web:0d3f6e5f2e6471cc2ec1e3"
   });
 
-  const status = { state: "loading", projectId: firebaseConfig.projectId, backendIntegrated: false };
+  const status = window.edgeaiFirebaseStatus;
   window.edgeaiFirebaseStatus = status;
 
   async function initEdgeaiFirebase() {
     try {
-      const [{ initializeApp, getApps }, { getAuth }] = await Promise.all([
+      const [{ initializeApp, getApps }, firebaseAuthSdk] = await Promise.all([
         import("https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js"),
         import("https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js")
       ]);
@@ -3784,16 +3550,18 @@ void initWorkspace();
         throw new Error("Projeto Firebase incorreto.");
       }
 
-      const auth = getAuth(app);
+      const auth = firebaseAuthSdk.getAuth(app);
       window.edgeaiFirebase = Object.freeze({ app, auth });
 
+      await window.edgeaiConnectFirebaseLogin(auth, firebaseAuthSdk);
       status.state = "ready";
       document.documentElement.dataset.edgeaiFirebase = "ready";
     } catch (error) {
       status.state = "error";
       status.error = error?.code || error?.message || "Falha ao carregar Firebase.";
       document.documentElement.dataset.edgeaiFirebase = "error";
-      console.error("EDGE AI: erro ao inicializar Firebase Auth.", error);
+      window.edgeaiFirebaseLoginUnavailable();
+      console.error("EDGE AI: erro ao inicializar Firebase Auth.");
     }
   }
 
