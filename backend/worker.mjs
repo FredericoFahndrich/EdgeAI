@@ -1300,7 +1300,7 @@ async function handlePrivateRoutes(request, env, url) {
  * ============================================================
  */
 async function handleUpload(request, env) {
-  const identity = await requestIdentity(request, env, new URL(request.url).searchParams.get("mode") === "public");
+  const identity = await requestIdentity(request, env);
   if (!identity) return jsonResponse(request, {error: "Identificação de upload necessária."}, 401);
   if (identity.user && request.headers.get("Origin") !== new URL(request.url).origin) {
     return jsonResponse(request, {error: "Origem não autorizada."}, 403);
@@ -1451,7 +1451,7 @@ async function handleChat(request, env, ctx) {
       (existingConversation.project_id || existingConversation.created_by_user_id)) {
     return jsonResponse(request, {error: "Conversa não pertence ao chat público."}, 403);
   }
-  const identity = await requestIdentity(request, env, !isPrivateScope);
+  const identity = await requestIdentity(request, env);
   if (!identity) return jsonResponse(request, {error: "Identificação da sessão necessária."}, 401);
   const limited = await consumePublicQuota(request, env, identity);
   if (limited) return limited;
