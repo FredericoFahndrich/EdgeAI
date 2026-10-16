@@ -151,11 +151,15 @@ async function verifyFirebaseIdToken(token) {
       !Number.isInteger(claims.iat) || claims.iat > now || claims.iat >= claims.exp ||
       !Number.isInteger(claims.auth_time) || claims.auth_time > now || claims.auth_time > claims.iat ||
       claims.firebase?.tenant || !['google.com','password'].includes(claims.firebase?.sign_in_provider)) {
-    throw new Error('Invalid token');
+    throw new Error('Invalid claims');
   }
-  const jwk = (await firebaseKeys()).find(k => k.kid === header.kid && k.kty === 'RSA');
+  let keys;
+  try { keys = await firebaseKeys(); } catch { throw new Error('Key service unavailable'); }
+  const jwk = keys.find(k => k.kid === header.kid && k.kty === 'RSA');
   if (!jwk) throw new Error('Unknown signing key');
-  const key = await crypto.subtle.importKey('jwk', jwk, {name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'}, false, ['verify']);
+  let key;
+  try { key = await crypto.subtle.importKey('jwk', jwk, {name:'RSASSA-PKCS1-v1_5',hash:'SHA-256'}, false, ['verify']); }
+  catch { throw new Error('Key import unavailable'); }
   if (!await crypto.subtle.verify('RSASSA-PKCS1-v1_5',key,decodeFirebasePart(parts[2]),new TextEncoder().encode(parts[0]+'.'+parts[1]))) {
     throw new Error('Invalid signature');
   }
@@ -174,7 +178,12 @@ async function exchangeFirebaseSession(request, env) {
   try {
     const body = await readJsonBounded(request);
     claims = await verifyFirebaseIdToken(body?.idToken);
-  } catch { return jsonResponse(request,{error:'Token Firebase inválido ou validação indisponível.'},401); }
+  } catch (error) {
+    // Fixed diagnostics only: never expose token contents, user data or runtime exception text.
+    const codes = {'Invalid claims':'claims','Key service unavailable':'key_fetch','Unknown signing key':'key_missing','Key import unavailable':'key_import','Invalid signature':'signature'};
+    const stage = codes[error.message] || 'token_format';
+    return jsonResponse(request,{error:'Falha na validação Firebase ('+stage+').',code:'firebase_'+stage},401);
+  }
   await claimApprovedEmail(env, claims);
   const user = await env.DB.prepare(`SELECT u.id,u.full_name FROM edgeai_firebase_identities i
     JOIN users u ON u.id=i.user_id WHERE i.firebase_project=?1 AND i.firebase_uid=?2
