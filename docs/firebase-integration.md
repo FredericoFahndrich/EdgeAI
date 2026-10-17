@@ -1,6 +1,6 @@
 # Integração Firebase → Worker → D1 (proposta 3.0.0)
 
-**Não implantada. Não mesclar isoladamente o frontend.** A publicação exige vínculo administrativo aprovado e testes reais. A versão ativa inspecionada em 15/10/2026 continua sendo Worker 2.7.0 / `4e512dd0`, com frontend `cfc139dd64f5a47780db8141d3175330817a5b20`.
+**Registro histórico da primeira proposta.** O comportamento atual de cadastro pessoal, a migration 0003, as permissões de owners e o roteiro de publicação/rollback estão em [Cadastro verificado](verified-registration.md). O restante deste documento descreve a inspeção e a proposta originais.
 
 ## Inspeção realizada
 

@@ -1,6 +1,6 @@
 # Usuários e acessos por e-mail
 
-Proposta no PR de integração; ainda não ativada em produção.
+O painel continua administrando vínculos antigos e projetos. Novas contas verificadas entram no espaço pessoal automaticamente, sem memberships. Consulte [Cadastro verificado](verified-registration.md) para o comportamento atual e o corte em produção; a aprovação abaixo se aplica ao vínculo explícito de membros antigos.
 
 ## Escolha
 

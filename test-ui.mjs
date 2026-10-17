@@ -38,6 +38,17 @@ await check('logout wipes cached private state and revokes server session',async
 await check('failed revocation never reports successful signout',async()=>{sandbox.window.didSignOut=false;revokeFails=true;await c.logoutUser();assert.equal(sandbox.window.didSignOut,false);assert.match(node('edgeaiLoginStatus').textContent,/revogar/);assert.equal(screen.hidden,false);revokeFails=false;});
 await check('account switch discards stale exchange before UI unlock',async()=>{hold=new Promise(r=>release=r);const first=c.syncFirebaseUser(user);await new Promise(r=>setImmediate(r));const second=c.syncFirebaseUser(null);hold=null;release();await Promise.all([first,second]);assert.equal(screen.hidden,false);assert.equal(session,null);assert.equal(vm.runInContext('authUser',c),null);});
 await check('HTTP 401 invalidates generation and locks chat',async()=>{await c.syncFirebaseUser(user);const generation=vm.runInContext('authGeneration',c);await c.edgeaiFetch('https://edgeai.test/chat',{});assert.equal(screen.hidden,false);assert(vm.runInContext('authGeneration',c)>generation);});
+await check('late response from old account cannot invalidate a newer session',async()=>{
+ let resolveResponse;
+ const originalFetch=sandbox.fetch;
+ sandbox.fetch=()=>new Promise(resolve=>resolveResponse=resolve);
+ const pending=c.edgeaiFetch('https://edgeai.test/projects',{});
+ vm.runInContext('authGeneration++;authUser={id:"new-user"};',c);
+ resolveResponse({status:401});
+ await assert.rejects(pending,/Sessão alterada/);
+ assert.equal(vm.runInContext('authUser.id',c),'new-user');
+ sandbox.fetch=originalFetch;
+});
 await check('settings button follows server-confirmed admin role',async()=>{
  sandbox.updateVisitorNameDisplay=()=>{};
  vm.runInContext(html.slice(html.indexOf('function updateAuthControls()'),html.indexOf('async function editVisitorName()')),c);

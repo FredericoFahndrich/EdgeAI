@@ -3466,7 +3466,9 @@ function lockChat() {
   render(); refreshSelectedFiles(); updateAuthControls(); updateWorkspaceOptions();
 }
 async function edgeaiFetch(url, options) {
+  const generation=authGeneration;
   const response = await fetch(url, options);
+  if (generation!==authGeneration) throw new Error('Sessão alterada.');
   if (response.status === 401 && String(url).startsWith(BACKEND_URL)) {
     ++authGeneration;
     lockChat();
