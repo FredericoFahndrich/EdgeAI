@@ -1,0 +1,8 @@
+{
+ "name":"edgeai-live-auth-local-test",
+ "main":"worker.mjs",
+ "compatibility_date":"2026-09-23",
+ "rules":[{"type":"Text","globs":["**/*.html"],"fallthrough":false}],
+ "d1_databases":[{"binding":"DB","database_name":"edgeai-live-test-db","database_id":"00000000-0000-0000-0000-000000000001"}],
+ "r2_buckets":[{"binding":"FILES_BUCKET","bucket_name":"edgeai-live-test-local"}]
+}

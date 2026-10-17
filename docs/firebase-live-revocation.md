@@ -23,14 +23,14 @@ The lookup uses the existing public Web API key and that user's signed ID token.
 
 `npm run test:firebase-emulator`: four tests against the official local Auth emulator using a demo project. The same issued token is accepted while active and denied after disabling, setting `validSince` and deleting the emulated account. Production accounts and credentials are not used. CI runs both suites before release.
 
-Production smoke after publication must verify both cookie delivery and lookup behavior with real sign-in, plus a reversible suspension of the existing ordinary test account. No project membership is granted for that test.
+Before publication, the candidate Worker was also tested against real Firebase with an isolated synthetic local D1 database. The ordinary test account authenticated, was temporarily disabled in Firebase, and its existing session was denied without waiting for token expiry. The account was restored; its revoked cookie remained denied. No production D1 data or project membership was changed by that test. Production smoke checks real sign-in and preserved account access after publication.
 
 ## Release and rollback
 
 1. Validate fresh private backup and record the current Worker version/D1 bookmark.
 2. Apply only additive migration 0004; publish the tested Worker with the reviewed frontend SHA.
 3. Reconnect admin and ordinary accounts; verify their existing IDs, personal/project isolation and Firebase lookup behavior.
-4. Suspend only the ordinary test account in Firebase, confirm server denial without waiting for ID-token expiry, then restore it and require fresh login. Preserve all memberships and data.
+4. Verify the prepublication real suspension evidence and account restoration; require fresh login after a revoked session. Preserve all memberships and data.
 5. Merge after CI and smoke checks. Check Pages and leave the app logged out.
 
 Rollback to 3.0.1 restores the prior Firebase-only revocation limitation; therefore it is an availability recovery action, not a security-equivalent fallback. Keep the additive origins table and all user data. Do not restore the entire D1 backup over later production writes.
