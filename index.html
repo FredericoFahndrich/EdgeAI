@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 
 <head>
+  <script>if(location.origin === 'https://fredericofahndrich.github.io') location.replace('https://edgeai-backend.frederico-fahndrich.workers.dev/app');</script>
 
   <meta charset="UTF-8">
 
@@ -1139,6 +1140,7 @@
 #edgeaiLoginScreen .edgeai-login-artwork { background-image:url("./assets/edgeai-login-artwork.webp"); background-size:contain; background-position:center bottom; }
 @media (max-width:1200px) { #edgeaiLoginScreen .edgeai-login-artwork { background-size:contain; } }
 @media (max-width:520px) { #edgeaiLoginScreen .edgeai-login-logo-full { width:min(200px,100%); } }
+.admin-dialog{width:min(1000px,94vw);max-height:88dvh;overflow:auto;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:18px;padding:24px}.admin-dialog::backdrop{background:rgba(0,0,0,.75)}.admin-dialog h2{margin-top:0}.admin-dialog label{display:flex;flex-direction:column;gap:5px}.admin-form{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin:16px 0}.admin-dialog input,.admin-dialog select{color:var(--text);background:var(--bg-2);border:1px solid var(--border);padding:8px;border-radius:8px;max-width:100%}.admin-user{padding:16px 0;border-top:1px solid var(--border)}.admin-user h3{margin:0}.admin-user p{overflow-wrap:anywhere}.admin-user .actions-row{display:flex;flex-wrap:wrap;gap:8px}.admin-dialog button{white-space:normal}.admin-dialog [role=status]{color:var(--muted)}
 </style>
 
 </head>
@@ -1267,9 +1269,8 @@
             </h2>
     
             <p>
-              Entre com sua conta Firebase.
-              O acesso ao chat será habilitado após
-              a integração segura com o servidor.
+              Entre com sua conta para acessar
+              suas conversas e projetos autorizados.
             </p>
     
           </div>
@@ -1516,13 +1517,14 @@
         <button class="nav-btn" type="button" onclick="openSidebarSection('workspacePanel')"><span class="nav-symbol" aria-hidden="true">▱</span>Projetos e conversas</button>
         <button class="nav-btn" type="button" onclick="openSidebarSection('pdfPanel')"><span class="nav-symbol" aria-hidden="true">▧</span>Arquivos PDF</button>
         <button class="nav-btn" type="button" onclick="openSidebarSection('authPanel')"><span class="nav-symbol" aria-hidden="true">⚙</span>Conta e acesso</button>
-      </nav>
+      <button id="adminSettingsBtn" class="nav-btn" type="button" onclick="openAdminSettings()" hidden>⚙ Configurações · usuários e acessos</button></nav>
       <div class="sidebar-divider"></div>
       <section class="panel-block" id="workspacePanel">
         <span class="label">Espaço de trabalho</span>
         <select id="workspaceSelect" class="workspace-select" onchange="switchWorkspace(this.value)" aria-label="Selecionar espaço de trabalho">
           <option value="public">Chat público</option>
         </select>
+        <button id="projectMembersBtn" class="mini-btn" type="button" onclick="openProjectMembers()" hidden>Gerenciar membros</button>
         <button class="workspace-new" type="button" onclick="newChat();toggleMobileSidebar(false)">＋ Nova conversa</button>
         <div class="list-heading">
           <strong>CONVERSAS RECENTES</strong>
@@ -1532,7 +1534,7 @@
         <div id="conversationList" class="conversation-list"><span class="info">Entre para consultar seu histórico privado.</span></div>
       </section>
       <section class="panel-block" id="projectFilesPanel" hidden>
-        <span class="label">Arquivos do projeto</span>
+        <span class="label" id="filesScopeLabel">Arquivos pessoais</span>
         <input id="projectUploadFiles" class="file-input" type="file" multiple accept=".pdf,.txt,.md,.csv,.json,.png,.jpg,.jpeg,.docx,.xlsx" aria-label="Escolher arquivos do projeto">
         <div class="project-file-actions">
           <button type="button" class="mini-btn" id="projectUploadBtn" onclick="uploadProjectDocuments()">Enviar arquivos</button>
@@ -1588,6 +1590,17 @@
     </main>
   </div>
 
+<dialog id="adminDialog" class="admin-dialog" aria-labelledby="adminTitle">
+  <div class="actions-row"><h2 id="adminTitle">Configurações · usuários e acessos</h2><button type="button" class="mini-btn" onclick="document.getElementById('adminDialog').close()">Fechar</button><button type="button" class="mini-btn" onclick="refreshAdminSettings()">Atualizar</button></div>
+  <p>Aprove um e-mail para uma conta nova ou vincule-o explicitamente a um usuário existente. Para entrar, o e-mail precisa ser verificado. Os acessos aos projetos são definidos separadamente.</p>
+  <form id="adminApprovalForm" class="admin-form">
+    <label>Usuário existente ou novo<select id="adminExisting"><option value="">Criar novo usuário</option></select></label>
+    <label>Nome do novo usuário<input id="adminName" maxlength="150" autocomplete="off"></label>
+    <label>E-mail autorizado<input id="adminEmail" type="email" maxlength="254" required autocomplete="off"></label>
+    <button id="adminApprove" type="submit" class="mini-btn">Aprovar e-mail</button>
+  </form>
+  <p id="adminStatus" role="status" aria-live="polite"></p><div id="adminUsers"></div>
+</dialog>
 <script>
 
 /*
@@ -1597,7 +1610,7 @@ VERSÃO
 */
 
 const APP_VERSION =
-  "2.7.0";
+  "3.0.0";
 
 
 /*
@@ -2097,6 +2110,7 @@ UPLOAD DE PDF
 */
 
 async function uploadPdfFiles() {
+  const uploadGeneration = authGeneration;
 
   const files =
     Array.from(
@@ -2117,6 +2131,7 @@ async function uploadPdfFiles() {
   for (
     const file of files
   ) {
+    if (uploadGeneration !== authGeneration || !authUser) throw new Error("Sessão alterada.");
 
     if (files.length > 10 || file.size === 0 || file.size > 15 * 1024 * 1024) {
       throw new Error("Selecione até 10 PDFs, com no máximo 15 MB por arquivo.");
@@ -2132,7 +2147,7 @@ async function uploadPdfFiles() {
 
 
     const response =
-      await fetch(
+      await edgeaiFetch(
 
         BACKEND_URL +
         "/upload" + (currentScope === "public" ? "?mode=public" : ""),
@@ -2189,6 +2204,7 @@ async function uploadPdfFiles() {
     }
 
 
+    if (uploadGeneration !== authGeneration || !authUser) throw new Error("Sessão alterada.");
     uploadedFiles.push({
 
       id:
@@ -2233,10 +2249,11 @@ function workspaceRoute() {
 function updateAuthControls() {
   const status = document.getElementById("authStatus");
   status.textContent = authUser
-    ? "Autenticado: " + authUser.full_name
+    ? "Autenticado: " + authUser.full_name + " · Meu ID: " + authUser.id
     : (isWorkerOrigin ? "Visitante não autenticado" : "Para projetos privados, abra o site pela rota /app do Worker.");
   document.getElementById("loginBtn").hidden = Boolean(authUser);
   document.getElementById("logoutBtn").hidden = !authUser;
+  document.getElementById("adminSettingsBtn").hidden = !authUser?.is_admin;
   updateVisitorNameDisplay();
   document.getElementById("editNameBtn").hidden = Boolean(authUser);
 }
@@ -2310,50 +2327,16 @@ setInterval(()=>{
 },30000);
 
 async function apiJson(url, options = {}) {
-  const response = await fetch(url, {
+  const generation = authGeneration;
+  const response = await edgeaiFetch(url, {
     credentials: "include", cache: "no-store", ...options,
     headers: {...(options.body ? {"Content-Type":"application/json"} : {}), ...(options.headers || {})}
   });
   let data;
   try { data = await response.json(); } catch { throw new Error("Resposta inválida do servidor."); }
   if (!response.ok) throw new Error(data.error || "Falha de comunicação (HTTP " + response.status + ").");
+  if (generation !== authGeneration) throw new Error("Sessão alterada.");
   return data;
-}
-
-async function loginUser() {
-  if (!isWorkerOrigin) {
-    showNotice("Abra o EDGE AI em: " + BACKEND_URL + "/app");
-    return;
-  }
-  if (isSending) return;
-  const values = await askFields("Entrar no EDGE AI", [
-    {label:"Nome completo cadastrado",autocomplete:"username",max:150},
-    {label:"Chave individual de acesso",type:"password",autocomplete:"current-password",max:200}
-  ], "Entrar");
-  if (!values) return;
-  const [name,key] = values;
-  try {
-    const data = await apiJson(BACKEND_URL + "/auth/login", {
-      method: "POST", body: JSON.stringify({user_name:name.trim(),access_key:key.trim()})
-    });
-    authUser = data.user;
-    if (!visitorName) { visitorName = authUser.full_name; localStorage.setItem("edgeai_user_name",visitorName); }
-    updateVisitorNameDisplay();
-    await loadUserProjects();
-    updateAuthControls();
-    await switchWorkspace(availableProjects.length ? "project:" + availableProjects[0].id : "personal");
-  } catch(error) { showNotice("Não foi possível entrar: " + error.message); }
-}
-
-async function logoutUser() {
-  if (isSending || !await askConfirmation("Encerrar a sessão atual?")) return;
-  try { await apiJson(BACKEND_URL + "/auth/logout", {method:"POST"}); }
-  catch(error) { showNotice("Não foi possível sair: " + error.message); return; }
-  authUser = null;
-  availableProjects = [];
-  updateWorkspaceOptions();
-  updateAuthControls();
-  await switchWorkspace("public");
 }
 
 async function loadUserProjects() {
@@ -2369,7 +2352,7 @@ function updateWorkspaceOptions() {
   const add = (value,label) => {
     const el = document.createElement("option"); el.value=value; el.textContent=label; select.appendChild(el);
   };
-  add("public", "Chat público");
+
   if (authUser) {
     add("personal", "Minhas conversas");
     for (const project of availableProjects) add("project:" + project.id, project.name);
@@ -2382,6 +2365,7 @@ async function switchWorkspace(value) {
   if (value !== "public" && !authUser) return;
   if (value.startsWith("project:") && !availableProjects.some(p => p.id === value.slice(8))) return;
   currentScope = value;
+  document.getElementById("projectMembersBtn").hidden = !value.startsWith("project:") || !(authUser?.is_admin || availableProjects.some(p=>p.id===value.slice(8) && p.role==="owner"));
   contentEpoch++;
   document.getElementById("pdfFiles").value="";
   document.getElementById("showArchived").checked=false;
@@ -2524,13 +2508,14 @@ async function deleteConversation(item) {
 function projectFilesBase() {
   return authUser && currentScope.startsWith("project:")
     ? BACKEND_URL + "/projects/" + encodeURIComponent(currentScope.slice(8)) + "/files"
-    : null;
+    : (authUser && currentScope === "personal" ? BACKEND_URL + "/me/files" : null);
 }
 
 async function reloadProjectDocuments() {
   const panel = document.getElementById("projectFilesPanel");
   const base = projectFilesBase();
   panel.hidden = !base;
+  document.getElementById("filesScopeLabel").textContent = currentScope === "personal" ? "Meus arquivos" : "Arquivos do projeto";
   const list = document.getElementById("projectFilesList");
   if (!base) { list.textContent = "Nenhum projeto selecionado."; return; }
   list.textContent = "Carregando arquivos...";
@@ -2567,6 +2552,7 @@ async function reloadProjectDocuments() {
 }
 
 async function uploadProjectDocuments() {
+  const uploadGeneration = authGeneration;
   const base = projectFilesBase();
   if (!base) { showNotice("Selecione um projeto autorizado."); return; }
   const input = document.getElementById("projectUploadFiles");
@@ -2576,11 +2562,12 @@ async function uploadProjectDocuments() {
   button.disabled = true;
   try {
     for (const file of files) {
+      if (uploadGeneration !== authGeneration || !authUser) return;
       if (file.size > 15 * 1024 * 1024 || file.size === 0) {
         throw new Error("Arquivo fora do limite de 15 MB: " + file.name);
       }
       const form = new FormData(); form.append("file", file);
-      const response = await fetch(base, {method:"POST",credentials:"include",body:form});
+      const response = await edgeaiFetch(base, {method:"POST",credentials:"include",body:form});
       const data = await response.json();
       if (!response.ok) throw new Error(file.name + ": " + (data.error || response.status));
     }
@@ -2608,6 +2595,8 @@ async function initWorkspace() {
 async function sendToBackend(
   text
 ) {
+  if (!authUser || !window.edgeaiFirebaseStatus.backendIntegrated) return;
+  const sendingGeneration = authGeneration;
   isSending = true;
   document.getElementById("workspaceSelect").disabled = true;
 
@@ -2647,6 +2636,7 @@ async function sendToBackend(
 
     const uploadedFiles =
       await uploadPdfFiles();
+    if (sendingGeneration !== authGeneration || !authUser) return;
 
 
     const fileIds =
@@ -2669,7 +2659,7 @@ async function sendToBackend(
     */
 
     const response =
-      await fetch(
+      await edgeaiFetch(
 
         BACKEND_URL +
         "/chat",
@@ -2774,6 +2764,7 @@ async function sendToBackend(
     --------------------------------------------------------
     */
 
+    if (sendingGeneration !== authGeneration || !authUser) return;
     apiHistory.push({
 
       role:
@@ -2851,7 +2842,7 @@ async function sendToBackend(
     if (currentScope !== "public") await reloadConversationList();
 
   } catch(error) {
-
+    if (sendingGeneration !== authGeneration || !authUser) return;
     console.error(
       "EDGE AI:",
       error
@@ -3333,7 +3324,215 @@ INICIALIZAÇÃO
 */
 
 
-// Etapa 5B.2: identidade Firebase isolada da sessão e das permissões do Worker.
+async function openProjectMembers() {
+  if(!authUser || !currentScope.startsWith('project:'))return;
+  const generation=authGeneration,scope=currentScope,base=BACKEND_URL+'/projects/'+encodeURIComponent(scope.slice(8))+'/members';
+  try {
+    const data=await apiJson(base);
+    if(generation!==authGeneration || scope!==currentScope)return;
+    const members=data.members.map(m=>m.full_name+' · '+m.id+' · '+m.role).join('\n');
+    const values=await askFields('Membros do projeto\n'+members,[{label:'ID do usuário (visível em Conta e acesso)',value:'',max:104},{label:'Papel: editor'+(authUser.is_admin?', owner':'')+' ou remover',value:'editor',max:10}]);
+    if(!values || generation!==authGeneration || scope!==currentScope)return;
+    const role=values[1].trim()==='remover'?null:values[1].trim();
+    if(!await askConfirmation('Alterar acesso de '+values[0]+' neste projeto?'))return;
+    if(generation!==authGeneration || scope!==currentScope)return;
+    await apiJson(base,{method:'PATCH',body:JSON.stringify({user_id:values[0].trim(),role})});
+    showNotice('Acesso atualizado.');
+  }catch(error){if(generation===authGeneration)showNotice(error.message);}
+}
+function adminMessage(text) {document.getElementById('adminStatus').textContent=text;}
+function clearAdminPanel() {
+  const dialog=document.getElementById('adminDialog');
+  if (dialog.open) dialog.close();
+  document.getElementById('adminUsers').replaceChildren();
+  document.getElementById('adminEmail').value='';
+  document.getElementById('adminName').value='';
+  document.getElementById('adminExisting').replaceChildren();
+  adminMessage('');
+}
+async function openAdminSettings() {
+  if (!authUser?.is_admin) return;
+  const dialog=document.getElementById('adminDialog');
+  if (!dialog.open) dialog.showModal();
+  await refreshAdminSettings();
+}
+async function adminChange(path,body,confirmation) {
+  if (!authUser?.is_admin) return;
+  const generation=authGeneration;
+  if (confirmation && !await askConfirmation(confirmation)) return;
+  if (generation!==authGeneration || !authUser?.is_admin) return;
+  try {
+    await apiJson(BACKEND_URL+path,{method:'PATCH',body:JSON.stringify(body)});
+    await refreshAdminSettings();adminMessage('Alteração salva.');
+  } catch(error) {if(generation===authGeneration)adminMessage(error.message);}
+}
+async function refreshAdminSettings() {
+  if (!authUser?.is_admin) return;
+  const generation=authGeneration;
+  adminMessage('Carregando usuários e acessos...');
+  try {
+    const data=await apiJson(BACKEND_URL+'/admin/access');
+    if (generation!==authGeneration || !authUser?.is_admin) return;
+    const list=document.getElementById('adminUsers'),existing=document.getElementById('adminExisting');
+    const selected=existing.value;
+    existing.replaceChildren(new Option('Criar novo usuário',''));
+    for(const user of data.users)if(user.id!==authUser.id)existing.add(new Option(user.full_name,user.id));
+    if([...existing.options].some(o=>o.value===selected))existing.value=selected;
+    document.getElementById('adminName').disabled=Boolean(existing.value);
+    list.replaceChildren();
+    const button=(text,fn)=>{const b=document.createElement('button');b.type='button';b.className='mini-btn';b.textContent=text;b.onclick=fn;return b;};
+    for(const user of data.users) {
+      const row=document.createElement('section');row.className='admin-user';
+      const name=document.createElement('h3');name.textContent=user.full_name;
+      const identity=document.createElement('p');
+      const state=user.linked?'Identidade vinculada':user.revoked_at?'Aprovação revogada':user.email?'Aguardando login com e-mail verificado':'Sem e-mail aprovado';
+      identity.textContent=(user.email||(user.linked?'Vínculo direto por UID':'E-mail não cadastrado'))+' · '+state+' · '+(user.is_active?'Ativo':'Suspenso');
+      row.append(name,identity);
+      const roles=document.createElement('p');
+      roles.textContent='Projetos: '+(data.memberships.filter(m=>m.user_id===user.id).map(m=>(data.projects.find(p=>p.id===m.project_id)?.name||m.project_id)+' ('+m.role+')').join(', ')||'nenhum');row.append(roles);
+      if(user.id===authUser.id) {
+        const note=document.createElement('p');note.textContent='Administrador — acesso protegido contra remoção pelo painel.';row.append(note);
+      } else {
+        const actions=document.createElement('div');actions.className='actions-row';
+        const project=document.createElement('select');project.setAttribute('aria-label','Projeto para '+user.full_name);
+        for(const item of data.projects)project.add(new Option(item.name,item.id));
+        const role=document.createElement('select');role.setAttribute('aria-label','Permissão para '+user.full_name);
+        role.add(new Option('Editor','editor'));role.add(new Option('Proprietário','owner'));
+        const grant=button('Salvar acesso',()=>adminChange('/admin/users/'+user.id+'/projects',{project_id:project.value,role:role.value},'Dar acesso de '+role.options[role.selectedIndex].text+' a '+user.full_name+' em '+project.options[project.selectedIndex]?.text+'?'));
+        const remove=button('Remover acesso',()=>adminChange('/admin/users/'+user.id+'/projects',{project_id:project.value,role:null},'Remover o acesso de '+user.full_name+' ao projeto selecionado? Os dados serão preservados.'));
+        grant.disabled=remove.disabled=!data.projects.length;
+        actions.append(project,role,grant,remove,
+          button(user.is_active?'Suspender usuário':'Reativar usuário',()=>adminChange('/admin/users/'+user.id+'/status',{is_active:!user.is_active},(user.is_active?'Suspender':'Reativar')+' o acesso de '+user.full_name+' ao EDGE AI?')));
+        if(user.email || user.linked)actions.append(button('Revogar identidade',()=>adminChange('/admin/users/'+user.id+'/approval',{revoke:true},'Revogar a identidade de '+user.full_name+' e encerrar suas sessões? O vínculo não será substituído automaticamente.')));
+        row.append(actions);
+      }
+      list.append(row);
+    }
+    adminMessage('Novos usuários entram com e-mail verificado, sem projetos. Aprovações vinculam membros antigos; o acesso aos projetos é definido abaixo.');
+  } catch(error) {if(generation===authGeneration)adminMessage(error.message);}
+}
+document.getElementById('adminExisting').addEventListener('change',event=>{
+  document.getElementById('adminName').disabled=Boolean(event.target.value);
+});
+document.getElementById('adminApprovalForm').addEventListener('submit',async event=>{
+  event.preventDefault();
+  if(!authUser?.is_admin)return;
+  const generation=authGeneration,button=document.getElementById('adminApprove');button.disabled=true;
+  const existing=document.getElementById('adminExisting').value;
+  const body={email:document.getElementById('adminEmail').value.trim(),
+    ...(existing?{existing_user_id:existing}:{full_name:document.getElementById('adminName').value.trim()})};
+  try {
+    await apiJson(BACKEND_URL+'/admin/users',{method:'POST',body:JSON.stringify(body)});
+    if(generation!==authGeneration)return;
+    document.getElementById('adminEmail').value='';document.getElementById('adminName').value='';
+    await refreshAdminSettings();adminMessage('E-mail aprovado. O usuário deve entrar com esse e-mail verificado. Defina abaixo os projetos permitidos.');
+  }catch(error){if(generation===authGeneration)adminMessage(error.message);}
+  finally{button.disabled=false;}
+});
+
+// Chat authorization is granted only after the Worker validates a Firebase token.
+let authGeneration = 0;
+let authQueue = Promise.resolve();
+let edgeaiAuthSdk;
+let backendSessionExpires = 0;
+let backendFirebaseUid = null;
+function gateChat(open) {
+  const screen = document.getElementById('edgeaiLoginScreen');
+  screen.hidden = open;
+  for (const parent of [screen.parentElement, document.body]) {
+    for (const child of parent.children) {
+      if (child !== screen && child !== screen.parentElement && child.tagName !== 'SCRIPT') {
+        child.inert = !open;
+        if (open) child.removeAttribute('aria-hidden'); else child.setAttribute('aria-hidden','true');
+      }
+    }
+  }
+}
+function lockChat() {
+  gateChat(false);
+  clearAdminPanel();
+  backendSessionExpires = 0;
+  backendFirebaseUid = null;
+  if (window.edgeaiFirebaseStatus) window.edgeaiFirebaseStatus.backendIntegrated = false;
+  contentEpoch++;
+  authUser = null; availableProjects = []; messages = []; apiHistory = [];
+  conversationId = crypto.randomUUID(); currentScope = 'personal';
+  hasMoreMessages = false; nextBeforeMessage = null;
+  document.getElementById('input').value = '';
+  document.getElementById('pdfFiles').value = '';
+  document.getElementById('projectUploadFiles').value = '';
+  document.getElementById('conversationList')?.replaceChildren();
+  document.getElementById('projectFilesList')?.replaceChildren();
+  render(); refreshSelectedFiles(); updateAuthControls(); updateWorkspaceOptions();
+}
+async function edgeaiFetch(url, options) {
+  const generation=authGeneration;
+  const response = await fetch(url, options);
+  if (generation!==authGeneration) throw new Error('Sessão alterada.');
+  if (response.status === 401 && String(url).startsWith(BACKEND_URL)) {
+    ++authGeneration;
+    lockChat();
+    document.getElementById('edgeaiLoginStatus').textContent='Sessão expirada. Use Reconectar ou entre novamente.';
+  }
+  return response;
+}
+async function syncFirebaseUser(user) {
+  const refreshCurrentAccount = Boolean(user?.uid && user.uid === backendFirebaseUid && authUser);
+  const generation = ++authGeneration;
+  if (!refreshCurrentAccount) lockChat();
+  const status = document.getElementById('edgeaiLoginStatus');
+  status.hidden = false;
+  status.textContent = user ? 'Validando acesso no servidor...' : 'Entre para acessar suas conversas.';
+  authQueue = authQueue.catch(()=>{}).then(async()=>{
+    if (generation !== authGeneration) return;
+    if (!isWorkerOrigin) {
+      status.textContent='Para entrar, abra o endereço seguro do aplicativo.';
+      return;
+    }
+    if (!user) {
+      const response = await fetch(BACKEND_URL+'/auth/logout',{method:'POST',credentials:'include'});
+      if (!response.ok) throw new Error('Não foi possível revogar a sessão no servidor. Tente sair novamente.');
+      return;
+    }
+    const token = await user.getIdToken();
+    const response = await fetch(BACKEND_URL+'/auth/firebase',{
+      method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify({idToken:token})
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Falha ao validar o acesso.');
+    if (generation !== authGeneration) return;
+    const check = await fetch(BACKEND_URL+'/auth/session',{credentials:'include',cache:'no-store'});
+    const session = await check.json();
+    if (!check.ok || !session.authenticated || session.user?.id !== data.user?.id) throw new Error('O navegador não confirmou a sessão.');
+    if (generation !== authGeneration) return;
+    authUser = session.user;
+    await loadUserProjects();
+    if (generation !== authGeneration) return;
+    if (!refreshCurrentAccount) await switchWorkspace('personal');
+    if (generation !== authGeneration) return;
+    backendSessionExpires = Date.parse(data.expires_at);
+    backendFirebaseUid = user.uid;
+    window.edgeaiFirebaseStatus.backendIntegrated = true;
+    updateAuthControls(); gateChat(true);
+  }).catch(error=>{
+    if (generation !== authGeneration) return;
+    lockChat(); status.hidden=false; status.textContent=error.message;
+  });
+  return authQueue;
+}
+async function logoutUser() {
+  ++authGeneration; lockChat();
+  await authQueue.catch(()=>{});
+  try {
+    const response = await fetch(BACKEND_URL+'/auth/logout',{method:'POST',credentials:'include'});
+    if (!response.ok) throw new Error('Falha ao revogar a sessão. Tente sair novamente.');
+    await edgeaiAuthSdk.signOut(window.edgeaiFirebase.auth);
+  } catch(error) {
+    const status=document.getElementById('edgeaiLoginStatus');status.hidden=false;status.textContent=error.message;
+  }
+}
+function loginUser() { gateChat(false); }
+
 function setupEdgeaiLoginForm() {
   const byId = id => document.getElementById("edgeaiLogin" + id);
   const form = byId("Form");
@@ -3344,9 +3543,15 @@ function setupEdgeaiLoginForm() {
   const remember = byId("Remember"), toggle = byId("TogglePassword");
   const submit = byId("Submit"), google = byId("Google"), logout = byId("Logout");
   const feedback = byId("Status"), errorNode = byId("Error");
+  const verifyEmail=document.createElement('button');verifyEmail.type='button';verifyEmail.className='edgeai-login-google';verifyEmail.textContent='Enviar verificação de e-mail';logout.after(verifyEmail);
+  verifyEmail.onclick=async()=>{if(!auth.currentUser||busy)return;try{await sdk.sendEmailVerification(auth.currentUser);message('Verificação enviada. Abra o link recebido e depois use Reconectar.');}catch(error){authError(error);}};
   let sdk, auth, busy = false, ready = false, persistenceReady = false;
   let persistenceVersion = 0;
-  const controls = [email, password, remember, toggle, submit, google];
+  const forgot=byId('ForgotPassword'), create=byId('CreateAccount');
+  const controls = [email, password, remember, toggle, submit, google, forgot, create];
+  const reconnect=document.createElement('button'); reconnect.type='button'; reconnect.className='edgeai-login-google';
+  reconnect.textContent='Reconectar'; logout.after(reconnect);
+  reconnect.onclick=async()=>{try{if(auth.currentUser){await auth.currentUser.reload();await auth.currentUser.getIdToken(true);}await syncFirebaseUser(auth.currentUser);}catch(error){authError(error);}};
 
   // A tela permanece aberta mesmo após login; isto não é autorização de backend.
   byId("Screen").hidden = false;
@@ -3373,14 +3578,14 @@ function setupEdgeaiLoginForm() {
     controls.forEach(node => { node.disabled = busy || !ready || signedIn; });
     submit.disabled ||= !persistenceReady;
     google.disabled ||= !persistenceReady;
-    logout.hidden = !signedIn;
+    logout.hidden = !signedIn; reconnect.hidden = !signedIn; verifyEmail.hidden = !signedIn || auth.currentUser.emailVerified;
     logout.disabled = busy || !ready;
     submit.querySelector("span:last-child").textContent = busy ? "Aguarde..." : "Entrar";
     window.edgeaiFirebaseStatus.authState = signedIn ? "signed-in" : "signed-out";
     if (busy) return;
     message(signedIn
-      ? "Login Firebase confirmado. O acesso ao chat ainda não está liberado; falta validar a identidade no servidor."
-      : ready ? "Entre com sua conta Firebase. O acesso ao chat permanece indisponível nesta etapa."
+      ? "Conta Firebase conectada. Use Reconectar para validar o acesso ou Sair para trocar de conta."
+      : ready ? "Entre com sua conta. Contas com e-mail verificado entram automaticamente em seu espaço pessoal."
       : "Carregando autenticação...");
   }
   function authError(error) {
@@ -3464,7 +3669,7 @@ function setupEdgeaiLoginForm() {
       } else if (action === "password") {
         await sdk.signInWithEmailAndPassword(auth, email.value.trim(), password.value);
       } else {
-        await sdk.signOut(auth);
+        await logoutUser();
       }
     } catch (error) { authError(error); }
     finally {
@@ -3485,6 +3690,22 @@ function setupEdgeaiLoginForm() {
     if (emailInvalid || passwordInvalid) { (emailInvalid ? email : password).focus(); return; }
     void run("password");
   });
+  forgot.addEventListener('click', async()=>{
+    if(busy || !ready) return;
+    if(!email.value.trim() || !email.validity.valid) {message('Informe seu e-mail.',true);return;}
+    busy=true;renderState();
+    try {await sdk.sendPasswordResetEmail(auth,email.value.trim());}
+    catch(error) {if(!['auth/user-not-found','auth/invalid-email'].includes(error.code)) {busy=false;renderState();authError(error);return;}}
+    busy=false;renderState();message('Se houver uma conta elegível, você receberá instruções de recuperação por e-mail.');
+  });
+  create.addEventListener('click', async()=>{
+    if(busy || !ready || auth.currentUser) return;
+    if(!email.value.trim() || !email.validity.valid || password.value.length<8) {message('Informe e-mail válido e senha com ao menos 8 caracteres. O cadastro não concede acesso aos projetos.',true);return;}
+    busy=true;renderState();
+    try {await sdk.createUserWithEmailAndPassword(auth,email.value.trim(),password.value);}
+    catch(error){authError(error);}
+    finally{busy=false;clearPassword();renderState();}
+  });
   google.addEventListener("click", () => { void run("google"); });
   logout.addEventListener("click", () => { void run("logout"); });
 
@@ -3493,7 +3714,13 @@ function setupEdgeaiLoginForm() {
     sdk = firebaseSdk;
     await auth.authStateReady();
     ready = true;
-    sdk.onAuthStateChanged(auth, () => { clearPassword(); clearError(); renderState(); });
+    edgeaiAuthSdk = sdk;
+    sdk.onIdTokenChanged(auth, user => { clearPassword(); clearError(); renderState(); void syncFirebaseUser(user); });
+    setInterval(()=>{
+      if(auth.currentUser && backendSessionExpires && Date.now() > backendSessionExpires-300000) {
+        void auth.currentUser.getIdToken(true).catch(()=>lockChat());
+      }
+    },60000);
     await applyPersistence();
   };
   window.edgeaiFirebaseLoginUnavailable = () => {
@@ -3507,7 +3734,7 @@ function setupEdgeaiLoginForm() {
 }
 
 window.edgeaiFirebaseStatus = { state: "loading", projectId: "edgeai-auth", backendIntegrated: false };
-document.documentElement.dataset.edgeaiLoginEtapa = "5B.2";
+document.documentElement.dataset.edgeaiLoginEtapa = "5C";
 setupEdgeaiLoginForm();
 
 updateVisitorNameDisplay();
@@ -3517,7 +3744,7 @@ render();
 refreshSelectedFiles();
 
 void checkBackend();
-void initWorkspace();
+// Firebase observer coordinates backend session initialization.
 
 </script>
 
@@ -3569,3 +3796,4 @@ void initWorkspace();
 </script>
 </body>
 </html>
+
