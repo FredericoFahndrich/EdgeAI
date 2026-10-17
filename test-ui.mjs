@@ -49,6 +49,29 @@ await check('late response from old account cannot invalidate a newer session',a
  assert.equal(vm.runInContext('authUser.id',c),'new-user');
  sandbox.fetch=originalFetch;
 });
+await check('session monitor locks revoked accounts and clears private state',async()=>{
+ const originalFetch=sandbox.fetch;
+ sandbox.fetch=async()=>({ok:true,json:async()=>({authenticated:false,user:null})});
+ vm.runInContext('authUser={id:"revoked"};messages=[{content:"secret"}];',c);
+ await c.monitorBackendSession();
+ assert.equal(vm.runInContext('authUser',c),null);assert.equal(vm.runInContext('messages.length',c),0);assert.equal(screen.hidden,false);
+ sandbox.fetch=originalFetch;
+});
+await check('session monitor rejects unavailable Firebase without keeping UI open',async()=>{
+ const originalFetch=sandbox.fetch;
+ sandbox.fetch=async()=>({ok:false,json:async()=>({code:'firebase_status_unavailable'})});
+ vm.runInContext('authUser={id:"outage"};',c);await c.monitorBackendSession();
+ assert.equal(vm.runInContext('authUser',c),null);assert.equal(screen.hidden,false);
+ sandbox.fetch=originalFetch;
+});
+await check('session monitor ignores a delayed result from a previous account',async()=>{
+ const originalFetch=sandbox.fetch;let finish;
+ sandbox.fetch=()=>new Promise(resolve=>finish=resolve);
+ vm.runInContext('authUser={id:"old"};',c);const pending=c.monitorBackendSession();
+ vm.runInContext('authGeneration++;authUser={id:"new"};',c);
+ finish({ok:true,json:async()=>({authenticated:false})});await pending;
+ assert.equal(vm.runInContext('authUser.id',c),'new');sandbox.fetch=originalFetch;
+});
 await check('settings button follows server-confirmed admin role',async()=>{
  sandbox.updateVisitorNameDisplay=()=>{};
  vm.runInContext(html.slice(html.indexOf('function updateAuthControls()'),html.indexOf('async function editVisitorName()')),c);

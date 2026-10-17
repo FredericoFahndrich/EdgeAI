@@ -2,4 +2,6 @@
 node_modules/
 .dev.vars
 dist/
+firebase-debug.log
+ui-debug.log
 *.sql.backup

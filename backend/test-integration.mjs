@@ -19,21 +19,37 @@ INSERT INTO messages(conversation_id,role,content,created_at) VALUES('private_ow
 const migration=fs.readFileSync(new URL('migrations/0001_firebase_identity.sql',import.meta.url),'utf8');db.exec(migration);db.exec(migration);
 const adminMigration=fs.readFileSync(new URL('migrations/0002_email_access_admin.sql',import.meta.url),'utf8');db.exec(adminMigration);db.exec(adminMigration);
 const selfMigration=fs.readFileSync(new URL('migrations/0003_verified_self_registration.sql',import.meta.url),'utf8');db.exec(selfMigration);db.exec(selfMigration);
+const liveMigration=fs.readFileSync(new URL('migrations/0004_firebase_account_origins.sql',import.meta.url),'utf8');db.exec(liveMigration);db.exec(liveMigration);
 for(const id of ['owner','editor','outsider']) db.prepare('INSERT INTO edgeai_firebase_identities VALUES(?,?,?,?,?,NULL)').run('edgeai-auth','uid-'+id,id,'fixture-admin','2026-01-01');
 let transactionQueue=Promise.resolve();
 const DB={prepare(sql){const st=db.prepare(sql);let args=[];return {bind(...a){args=a;return this;},params(){return Object.fromEntries(args.map((v,i)=>[i+1,v]));},async first(){return st.get(this.params())||null;},async all(){return {results:st.all(this.params())};},async run(){const r=st.run(this.params());return {meta:{changes:Number(r.changes),last_row_id:Number(r.lastInsertRowid)}};}};},async batch(sts){const job=transactionQueue.then(async()=>{db.exec('BEGIN');try{const out=[];for(const st of sts)out.push(await st.run());db.exec('COMMIT');return out;}catch(e){db.exec('ROLLBACK');throw e;}});transactionQueue=job.catch(()=>{});return job;}};
 const pair=await crypto.subtle.generateKey({name:'RSASSA-PKCS1-v1_5',modulusLength:2048,publicExponent:new Uint8Array([1,0,1]),hash:'SHA-256'},true,['sign','verify']);
 const jwk=await crypto.subtle.exportKey('jwk',pair.publicKey);jwk.kid='test-key';
-let providerCalls=0,keyCalls=0;
-globalThis.fetch=async(url)=>{
+let providerCalls=0,keyCalls=0,liveCalls=0;
+const firebaseAccounts=new Map();let firebaseLookupMode='ok',beforeModelReturn=null;
+const fixtureCreatedAt=String((Math.floor(Date.now()/1000)-86400)*1000);
+function cookiePair(response){return response.headers.getSetCookie().map(c=>c.split(';')[0]).join('; ');}
+globalThis.fetch=async(url,options)=>{
   if(String(url).startsWith('https://raw.githubusercontent.com/FredericoFahndrich/EdgeAI/')) {
     assert.match(String(url),/\/EdgeAI\/[0-9a-f]{40}\/index\.html$/);
     return new Response('<head><title>Fixture pinned frontend</title></head>');
   }
   if(String(url).includes('/service_accounts/v1/jwk/')) {keyCalls++;return Response.json({keys:[jwk]},{headers:{'Cache-Control':'max-age=300'}});}
+  if(String(url).startsWith('https://identitytoolkit.googleapis.com/v1/accounts:lookup?key=')) {
+    liveCalls++;assert.equal(options.redirect,'manual');assert.equal(options.headers['Cache-Control'],'no-store');
+    const {idToken}=JSON.parse(options.body),claims=JSON.parse(Buffer.from(idToken.split('.')[1],'base64url'));
+    if(firebaseLookupMode==='network')throw Error('Fixture network failure');
+    if(firebaseLookupMode==='outage')return Response.json({error:{message:'UNAVAILABLE'}},{status:503});
+    if(firebaseLookupMode==='bad-key')return Response.json({error:{message:'API_KEY_INVALID'}},{status:400});
+    if(firebaseLookupMode==='malformed')return Response.json({unexpected:true});
+    const overrides=firebaseAccounts.get(claims.sub)||{};
+    if(overrides.error)return Response.json({error:{message:overrides.error}},{status:400});
+    if(overrides.deleted)return Response.json({users:[]});
+    return Response.json({users:[{localId:claims.sub,email:claims.email,emailVerified:true,validSince:'0',createdAt:fixtureCreatedAt,...overrides}]});
+  }
   providerCalls++;
   if(String(url).endsWith('/v1/files'))return Response.json({id:'file-fixture'});
-  if(String(url).endsWith('/v1/responses'))return Response.json({output_text:JSON.stringify({message:'Fixture answer',linkedin_action:{required:false}})});
+  if(String(url).endsWith('/v1/responses')){if(beforeModelReturn)await beforeModelReturn();return Response.json({output_text:JSON.stringify({message:'Fixture answer',linkedin_action:{required:false}})});}
   throw Error('Unexpected outbound');
 };
 const bucket=new Map();const env={DB,OPENAI_API_KEY:'fixture',FILES_BUCKET:{async put(k,b){bucket.set(k,b);},async get(k){const b=bucket.get(k);return b?{body:b,size:b.byteLength}:null;},async delete(k){bucket.delete(k);}}};
@@ -59,7 +75,7 @@ for(const [name,claims,head] of [['aud',{aud:'wrong'}],['issuer',{iss:'wrong'}],
 await check('tampered signature rejected',async()=>{let t=await token();t=t.slice(0,-20)+'a'.repeat(20);await expect('/auth/firebase',{method:'POST',body:{idToken:t}},401);});
 await check('unapproved UID cannot claim by name/email/user_id',async()=>{await expect('/auth/firebase',{method:'POST',body:{idToken:await token('not-approved',{email:'owner@example.invalid',email_verified:false,name:'Owner'}),user_id:'owner'}},403);assert.equal(db.prepare('SELECT count(*) n FROM user_sessions').get().n,0);});
 await check('cross origin exchange rejected',()=>expect('/auth/firebase',{method:'POST',origin:'https://fredericofahndrich.github.io',body:{idToken:'bad'}},403));
-const sessions={};for(const id of ['owner','editor','outsider'])await check('verified exchange '+id,async()=>{const r=await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-'+id)}},200);sessions[id]=r.headers.get('set-cookie').split(';')[0];assert.match(r.headers.get('set-cookie'),/HttpOnly; Secure; SameSite=Lax/);const s=await expect('/auth/session',{cookie:sessions[id]},200);assert.equal((await s.json()).user.id,id);});
+const sessions={};for(const id of ['owner','editor','outsider'])await check('verified exchange '+id,async()=>{const r=await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-'+id)}},200);sessions[id]=cookiePair(r);assert.match(r.headers.get('set-cookie'),/HttpOnly; Secure; SameSite=Lax/);const s=await expect('/auth/session',{cookie:sessions[id]},200);assert.equal((await s.json()).user.id,id);});
 await check('authenticated former-public PDF upload uses backend owner',async()=>{const form=new FormData();form.append('file',new File(['%PDF-1.4 fixture'],'fixture.pdf',{type:'application/pdf'}));await expect('/upload?mode=public',{method:'POST',cookie:sessions.owner,raw:form},200);assert.equal(db.prepare('SELECT owner_key FROM edgeai_pdf_owners WHERE file_id=?').get('file-fixture').owner_key,'user:owner');});
 await check('public chat now owned by backend user',async()=>{await expect('/chat',{method:'POST',cookie:sessions.owner,body:{message:'Fixture',mode:'public',conversation_id:'new_personal'}},200);assert.equal(db.prepare('SELECT created_by_user_id FROM conversations WHERE id=?').get('new_personal').created_by_user_id,'owner');});
 await check('legacy guest conversation never adopted',()=>expect('/chat',{method:'POST',cookie:sessions.owner,body:{message:'Fixture',mode:'public',conversation_id:'legacy_guest'}},403));
@@ -76,16 +92,16 @@ await check('deactivated user denied',async()=>{db.exec("UPDATE users SET is_act
 db.exec("INSERT INTO users VALUES('usr_frederico','Administrator','admin','disabled',1),('usr_legacy','Existing member','existing-member','disabled',1); INSERT INTO project_members VALUES('prj_solar','usr_legacy','editor');");
 db.prepare('INSERT INTO edgeai_firebase_identities VALUES(?,?,?,?,?,NULL)').run('edgeai-auth','uid-admin','usr_frederico','approved fixture','2026-01-01');
 let adminCookie;
-await check('admin role derives from verified D1 identity',async()=>{const r=await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-admin')}},200);adminCookie=r.headers.get('Set-Cookie').split(';')[0];const session=await expect('/auth/session',{cookie:adminCookie},200);assert.equal((await session.json()).user.is_admin,true);});
+await check('admin role derives from verified D1 identity',async()=>{const r=await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-admin')}},200);adminCookie=cookiePair(r);const session=await expect('/auth/session',{cookie:adminCookie},200);assert.equal((await session.json()).user.is_admin,true);});
 for(const method of ['GET','POST','PATCH'])await check('nonadministrator cannot call admin API '+method,async()=>{await expect('/admin/access',{method,cookie:sessions.owner,body:method==='GET'?undefined:{is_admin:true}},401);await expect('/admin/access',{method,cookie:adminCookie,origin:'https://fredericofahndrich.github.io',body:method==='GET'?undefined:{}},403);});
 // Owner cookie above was logged out; an active editor proves an authenticated denial.
-const active=await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-owner')}},200);const ordinaryCookie=active.headers.get('Set-Cookie').split(';')[0];
+const active=await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-owner')}},200);const ordinaryCookie=cookiePair(active);
 await check('active ordinary user receives 403 for admin data and mutations',async()=>{await expect('/admin/access',{cookie:ordinaryCookie},403);await expect('/admin/users',{method:'POST',cookie:ordinaryCookie,body:{email:'not-allowed@example.invalid',existing_user_id:'usr_legacy',is_admin:true}},403);});
 await check('admin listing contains no credential hashes or session tokens',async()=>{const r=await expect('/admin/access',{cookie:adminCookie},200);const data=await r.json();assert(data.users.some(u=>u.id==='usr_legacy'));for(const u of data.users){assert(!('access_key_hash' in u));assert(!('firebase_uid' in u));}});
 await check('approve explicit email for existing user preserves membership',async()=>{await expect('/admin/users',{method:'POST',cookie:adminCookie,body:{email:'Invited@example.invalid',existing_user_id:'usr_legacy'}},201);assert.equal(db.prepare('SELECT role FROM project_members WHERE user_id=?').get('usr_legacy').role,'editor');assert.equal(db.prepare('SELECT count(*) n FROM edgeai_admin_audit').get().n,1);});
 await check('unverified or unapproved email cannot claim identity',async()=>{for(const overrides of [{email:'invited@example.invalid',email_verified:false}])await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-invited',overrides)}},403);assert.equal(db.prepare('SELECT count(*) n FROM edgeai_firebase_identities WHERE user_id=?').get('usr_legacy').n,0);});
 let invitedCookie;
-await check('verified approved email claims exactly its administratively selected user',async()=>{const r=await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-invited',{email:'INVITED@example.invalid',email_verified:true})}},200);invitedCookie=r.headers.get('Set-Cookie').split(';')[0];assert.equal((await r.json()).user.id,'usr_legacy');await expect('/projects/prj_solar/access',{cookie:invitedCookie},200);assert.equal(db.prepare('SELECT claimed_uid FROM edgeai_email_approvals WHERE user_id=?').get('usr_legacy').claimed_uid,'uid-invited');});
+await check('verified approved email claims exactly its administratively selected user',async()=>{const r=await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-invited',{email:'INVITED@example.invalid',email_verified:true})}},200);invitedCookie=cookiePair(r);assert.equal((await r.json()).user.id,'usr_legacy');await expect('/projects/prj_solar/access',{cookie:invitedCookie},200);assert.equal(db.prepare('SELECT claimed_uid FROM edgeai_email_approvals WHERE user_id=?').get('usr_legacy').claimed_uid,'uid-invited');});
 await check('second UID cannot reuse approval even with same verified email',async()=>expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-other',{email:'invited@example.invalid',email_verified:true})}},403));
 await check('duplicate email approval cannot replace identity',()=>expect('/admin/users',{method:'POST',cookie:adminCookie,body:{email:'invited@example.invalid',existing_user_id:'usr_legacy'}},409));
 let newUser;
@@ -98,7 +114,7 @@ await check('invalid admin values and missing targets rejected',async()=>{await 
 let freshCookie,freshId;
 await check('verified newcomer with forged administrator fields receives isolated user',async()=>{
   const r=await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-fresh',{name:'Administrator'}),user_id:'usr_frederico',is_admin:true,project_id:'prj_solar'}},200);
-  freshCookie=r.headers.get('Set-Cookie').split(';')[0];freshId=(await r.json()).user.id;
+  freshCookie=cookiePair(r);freshId=(await r.json()).user.id;
   assert.notEqual(freshId,'usr_frederico');assert.equal(db.prepare('SELECT count(*) n FROM project_members WHERE user_id=?').get(freshId).n,0);
   assert.deepEqual((await (await expect('/projects',{cookie:freshCookie},200)).json()).projects,[]);
   await expect('/admin/access',{cookie:freshCookie},403);
@@ -193,4 +209,91 @@ await check('all foreign keys valid and all auto users have identity and email',
   assert.equal(db.prepare('PRAGMA foreign_key_check').all().length,0);
   assert.equal(db.prepare("SELECT count(*) n FROM users u WHERE id LIKE 'usr_%' AND normalized_name LIKE 'firebase-%' AND NOT EXISTS(SELECT 1 FROM edgeai_firebase_identities i WHERE i.user_id=u.id) AND NOT EXISTS(SELECT 1 FROM edgeai_email_approvals a WHERE a.user_id=u.id)").get().n,0);
 });
-assert.equal(keyCalls,1);console.log(JSON.stringify({passed,keyCacheVerified:true,providerCalls}));
+let liveCookie,liveId;
+const liveNow=Math.floor(Date.now()/1000);
+await check('live session uses two secure host cookies and stores no Firebase token',async()=>{
+ const r=await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-live')}},200);
+ liveCookie=cookiePair(r);liveId=(await r.json()).user.id;
+ const cookies=r.headers.getSetCookie();assert.equal(cookies.length,2);
+ assert(cookies.every(c=>/HttpOnly; Secure; SameSite=Lax; Path=\//.test(c)));
+ assert(cookies.some(c=>c.startsWith('__Host-edgeai_firebase=')&&!c.includes('Domain=')));
+ assert(!JSON.stringify(db.prepare('SELECT * FROM user_sessions').all()).includes(liveCookie.split('__Host-edgeai_firebase=')[1]));
+});
+await check('each request does a fresh lookup, only duplicate checks within one request are reused',async()=>{
+ const before=liveCalls;await expect('/projects',{cookie:liveCookie},200);assert.equal(liveCalls,before+1);
+ await expect('/projects',{cookie:liveCookie},200);assert.equal(liveCalls,before+2);
+});
+await check('Firebase cookie cannot be removed or replaced with another account token',async()=>{
+ const primary=liveCookie.split('; ')[0];await expect('/projects',{cookie:primary},401);
+ await expect('/projects',{cookie:primary+'; __Host-edgeai_firebase='+await token('uid-admin')},401);
+});
+await check('Firebase suspension denies an existing session on its very next request',async()=>{
+ firebaseAccounts.set('uid-live',{disabled:true});
+ const before=providerCalls;const r=await expect('/auth/session',{cookie:liveCookie},200);assert.equal((await r.json()).authenticated,false);
+ for(const path of ['/projects','/me/conversations','/me/files','/projects/prj_solar/files','/upload','/chat'])await expect(path,{cookie:liveCookie,method:['/upload','/chat'].includes(path)?'POST':'GET',body:path==='/chat'?{message:'must not run'}:undefined},401);
+ assert.equal(providerCalls,before);
+ firebaseAccounts.delete('uid-live');await expect('/projects',{cookie:liveCookie},401);
+});
+await check('revocation uses auth_time even if iat is newer and signed token has not expired',async()=>{
+ firebaseAccounts.set('uid-live',{validSince:String(liveNow-100)});
+ await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-live',{auth_time:liveNow-500,iat:liveNow-5})}},401);
+});
+await check('fresh reauthentication after revocation preserves D1 identity and membership',async()=>{
+ const before=db.prepare('SELECT count(*) n FROM users').get().n;
+ const r=await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-live',{auth_time:liveNow-1,iat:liveNow})}},200);
+ assert.equal((await r.json()).user.id,liveId);liveCookie=cookiePair(r);
+ assert.equal(db.prepare('SELECT count(*) n FROM users').get().n,before);assert.equal(db.prepare('SELECT count(*) n FROM project_members WHERE user_id=?').get(liveId).n,0);
+});
+for(const mode of ['network','outage','bad-key','malformed'])await check('Firebase '+mode+' fails closed without revoking valid D1 records',async()=>{
+ const before=db.prepare('SELECT count(*) n FROM user_sessions WHERE revoked_at IS NOT NULL').get().n,providers=providerCalls;
+ firebaseLookupMode=mode;
+ await expect('/auth/session',{cookie:liveCookie},503);await expect('/projects',{cookie:liveCookie},503);
+ await expect('/chat',{cookie:liveCookie,method:'POST',body:{message:'must not reach AI'}},503);
+ assert.equal(providerCalls,providers);assert.equal(db.prepare('SELECT count(*) n FROM user_sessions WHERE revoked_at IS NOT NULL').get().n,before);
+ firebaseLookupMode='ok';await expect('/projects',{cookie:liveCookie},200);
+});
+await check('Firebase response with missing revocation metadata is not trusted',async()=>{
+ firebaseAccounts.set('uid-live',{validSince:undefined});await expect('/projects',{cookie:liveCookie},503);
+ firebaseAccounts.set('uid-live',{disabled:'false'});await expect('/projects',{cookie:liveCookie},503);
+ firebaseAccounts.delete('uid-live');
+});
+await check('a changed account creation timestamp cannot reuse an old UID to reach D1 data',async()=>{
+ firebaseAccounts.set('uid-live',{createdAt:String((liveNow-10)*1000)});
+ await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-live',{auth_time:liveNow-1,iat:liveNow})}},403);
+ assert.equal(db.prepare('SELECT created_at_ms FROM edgeai_firebase_account_origins WHERE firebase_uid=?').get('uid-live').created_at_ms,fixtureCreatedAt);
+ firebaseAccounts.delete('uid-live');
+});
+await check('Firebase revocation invalidates a valid backend cookie before its expiry',async()=>{
+ firebaseAccounts.set('uid-live',{validSince:String(liveNow+1)});
+ await expect('/projects',{cookie:liveCookie},401);
+ firebaseAccounts.delete('uid-live');await expect('/projects',{cookie:liveCookie},401);
+});
+for(const error of ['USER_DISABLED','USER_NOT_FOUND','INVALID_ID_TOKEN','TOKEN_EXPIRED'])await check('Firebase '+error+' cannot create a replacement user',async()=>{
+ const before=db.prepare('SELECT count(*) n FROM users').get().n;
+ firebaseAccounts.set('uid-provider-denied',{error});
+ await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-provider-denied')}},401);
+ assert.equal(db.prepare('SELECT count(*) n FROM users').get().n,before);
+});
+await check('revocation during a long AI call suppresses private response and assistant persistence',async()=>{
+ const r=await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-during')}},200),cookie=cookiePair(r);
+ beforeModelReturn=async()=>firebaseAccounts.set('uid-during',{disabled:true});
+ const result=await expect('/chat',{method:'POST',cookie,body:{message:'fixture',mode:'personal',conversation_id:'revoked_during_model'}},401);
+ assert(!((await result.text()).includes('Fixture answer')));
+ assert.equal(db.prepare("SELECT count(*) n FROM messages WHERE conversation_id='revoked_during_model' AND role='assistant'").get().n,0);
+ beforeModelReturn=null;
+});
+await check('Firebase outage during a long AI call also suppresses private response',async()=>{
+ const r=await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-during-outage')}},200),cookie=cookiePair(r);
+ beforeModelReturn=async()=>{firebaseLookupMode='outage';};
+ await expect('/chat',{method:'POST',cookie,body:{message:'fixture',mode:'personal',conversation_id:'outage_during_model'}},503);
+ assert.equal(db.prepare("SELECT count(*) n FROM messages WHERE conversation_id='outage_during_model' AND role='assistant'").get().n,0);
+ beforeModelReturn=null;firebaseLookupMode='ok';
+});
+await check('logout expires both cookies and does not require a functioning Firebase provider',async()=>{
+ const r=await expect('/auth/firebase',{method:'POST',body:{idToken:await token('uid-logout-live')}},200),cookie=cookiePair(r);
+ firebaseLookupMode='outage';const out=await expect('/auth/logout',{cookie,method:'POST'},200);
+ assert.equal(out.headers.getSetCookie().length,2);assert(out.headers.getSetCookie().every(c=>c.includes('Max-Age=0')));
+ firebaseLookupMode='ok';await expect('/projects',{cookie},401);
+});
+await check('live-state migration leaves all foreign keys valid',async()=>assert.deepEqual(db.prepare('PRAGMA foreign_key_check').all(),[]));
+assert.equal(keyCalls,1);console.log(JSON.stringify({passed,keyCacheVerified:true,providerCalls,liveCalls}));
