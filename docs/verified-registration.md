@@ -23,7 +23,7 @@ The global administrative panel retains approval of legacy members, status/revoc
 
 ## Tests
 
-`npm test`: 74 backend cases with signed RSA JWTs and real in-memory SQLite transactions, plus 10 UI coordination cases. Covers personal/project isolation, reserved emails, suspended/revoked identities, repeat display names, duplicate concurrent exchanges, competing UIDs, rollback after an injected failure, owner scoping, concurrent owner removal, personal R2 bytes and session cleanup. These are local tests; real Firebase/R2/OpenAI E2E must also pass before merge.
+`npm test`: 74 backend cases with signed RSA JWTs and real in-memory SQLite transactions, plus 11 UI coordination cases. Covers personal/project isolation, reserved emails, suspended/revoked identities, repeat display names, duplicate concurrent exchanges, competing UIDs, rollback after an injected failure, owner scoping, concurrent owner removal, personal R2 bytes and session cleanup. These are local tests; real Firebase/R2/OpenAI E2E must also pass before merge.
 
 ## Release and rollback
 
