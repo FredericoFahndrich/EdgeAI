@@ -3167,7 +3167,7 @@ async function checkBackend() {
   try {
 
     const response =
-      await edgeaiFetch(
+      await fetch(
 
         BACKEND_URL +
         "/health",

@@ -64,4 +64,17 @@ await check('logout removes administrative personal data and closes panel',async
  node('adminEmail').value='private@example.invalid';node('adminUsers').textContent='Private list';
  c.clearAdminPanel();assert.equal(dialog.open,false);assert.equal(node('adminEmail').value,'');assert.equal(node('adminUsers').textContent,'');
 });
+await check('public health response stays valid during login refresh',async()=>{
+ const start=html.indexOf('async function checkBackend()');
+ const end=html.indexOf('\n}',start)+2;
+ vm.runInContext(html.slice(start,end),c);
+ node('statusDot').style={};
+ const originalFetch=sandbox.fetch;
+ let finishHealth;
+ sandbox.fetch=()=>new Promise(resolve=>finishHealth=resolve);
+ const pending=c.checkBackend();
+ vm.runInContext('authGeneration++;',c);
+ finishHealth({ok:true,json:async()=>({status:'ok'})});await pending;
+ assert.equal(node('statusText').textContent,'Pronto');sandbox.fetch=originalFetch;
+});
 console.log(JSON.stringify({passed,scriptSyntax:true,scope:'DOM stubs and mocked HTTP; no real account/browser proof'}));
