@@ -1,5 +1,6 @@
 import {resolveVerifiedIdentity} from './identity-registration.mjs';
 import {handleProjectMembers} from './project-members.mjs';
+import {lookupFirebaseAccount,sessionCookies,sessionHash,FirebaseStatusUnavailable} from './firebase-live.mjs';
 /**
  * ============================================================================
  * EDGE AI — BACKEND 3.0.0
@@ -35,7 +36,7 @@ const FIREBASE_PROJECT = 'edgeai-auth';
 const FIREBASE_JWKS = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
 let firebaseKeyCache = { until: 0, keys: [] };
 let firebaseKeyRequest;
-const BACKEND_VERSION = "3.0.1";
+const BACKEND_VERSION = "3.0.2";
 const DEFAULT_MODEL = "gpt-5";
 const MAX_HISTORY_MESSAGES = 20;
 const ALLOWED_ORIGINS = [
@@ -476,10 +477,12 @@ async function exchangeFirebaseSession(request, env) {
     window_minute=excluded.window_minute RETURNING attempts`).bind(key, Math.floor(Date.now() / 60000)).first();
   if (limit.attempts > 20)
     return jsonResponse(request, { error: 'Muitas tentativas. Aguarde um minuto.' }, 429);
-  let claims;
+  let claims,idToken;
   try {
     const body = await readJsonBounded(request);
-    claims = await verifyFirebaseIdToken(body?.idToken);
+    idToken=body?.idToken;
+    if(typeof idToken!=='string'||idToken.length>3800)throw new Error('Invalid token');
+    claims = await verifyFirebaseIdToken(idToken);
   }
   catch (error) {
     const codes = {
@@ -507,45 +510,68 @@ async function exchangeFirebaseSession(request, env) {
       code: 'firebase_' + stage
     }, 401);
   }
+  if(claims.email_verified!==true||!normalizedApprovalEmail(claims.email))return jsonResponse(request,{error:'E-mail verificado obrigatório.',code:'identity_not_approved'},403);
+  const live=await lookupFirebaseAccount(idToken,claims);
+  if(!live)return jsonResponse(request,{error:'Conta Firebase suspensa, removida ou sessão revogada. Entre novamente.',code:'firebase_access_revoked'},401);
   const user = await resolveVerifiedIdentity(env, claims, normalizedApprovalEmail);
   if (!user) return jsonResponse(request, {error:'E-mail não verificado ou identidade bloqueada/reservada.',code:'identity_not_approved'},403);
+  await env.DB.prepare(`INSERT INTO edgeai_firebase_account_origins(firebase_project,firebase_uid,created_at_ms)
+    VALUES(?1,?2,?3) ON CONFLICT(firebase_project,firebase_uid) DO NOTHING`).bind(FIREBASE_PROJECT,claims.sub,live.createdAt).run();
+  const accountOrigin=await env.DB.prepare('SELECT created_at_ms FROM edgeai_firebase_account_origins WHERE firebase_project=?1 AND firebase_uid=?2')
+    .bind(FIREBASE_PROJECT,claims.sub).first();
+  if(accountOrigin?.created_at_ms!==live.createdAt)return jsonResponse(request,{error:'Identidade Firebase substituída. Recuperação administrativa necessária.',code:'firebase_account_replaced'},403);
   // A session never outlives the signed ID token. Refresh requires another verified token.
   const token = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  const id = crypto.randomUUID(), tokenHash = await digestKey(token);
+  const id = crypto.randomUUID(), tokenHash = await sessionHash(token,idToken,digestKey);
   const expiresAt = new Date(claims.exp * 1000).toISOString();
-  const previous = (request.headers.get('Cookie') || '').match(/(?:^|;\s*)edgeai_session=([A-Za-z0-9_-]{43})(?:;|$)/)?.[1];
+  const previous=sessionCookies(request);
   const statements = [
     env.DB.prepare('INSERT INTO user_sessions(id,user_id,token_hash,expires_at) VALUES(?1,?2,?3,?4)').bind(id, user.id, tokenHash, expiresAt),
     env.DB.prepare('INSERT INTO edgeai_firebase_sessions(session_id,firebase_project,firebase_uid) VALUES(?1,?2,?3)').bind(id, FIREBASE_PROJECT, claims.sub)
   ];
-  if (previous)
-    statements.push(env.DB.prepare('UPDATE user_sessions SET revoked_at=?1 WHERE token_hash=?2 AND revoked_at IS NULL').bind(new Date().toISOString(), await digestKey(previous)));
+  if (previous.session)
+    statements.push(env.DB.prepare('UPDATE user_sessions SET revoked_at=?1 WHERE token_hash=?2 AND revoked_at IS NULL').bind(new Date().toISOString(), await sessionHash(previous.session,previous.firebase,digestKey)));
   await env.DB.batch(statements);
   const response = jsonResponse(request, { authenticated: true, user, expires_at: expiresAt });
   response.headers.set('Set-Cookie', `edgeai_session=${token}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${Math.max(0, claims.exp - Math.floor(Date.now() / 1000))}`);
+  response.headers.append('Set-Cookie', `__Host-edgeai_firebase=${idToken}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${Math.max(0, claims.exp - Math.floor(Date.now() / 1000))}`);
   return response;
 }
 /** Valida cookie, hash da sessão, validade temporal, usuário ativo e vínculo Firebase não revogado em TODA consulta. */
-async function getAuthenticatedUser(request, env) {
+const requestAuthentication=new WeakMap();
+async function getAuthenticatedUser(request,env){
+  if(!requestAuthentication.has(request))requestAuthentication.set(request,authenticateLiveRequest(request,env));
+  return requestAuthentication.get(request);
+}
+async function authenticateLiveRequest(request, env) {
   if (!env.DB)
     return null;
-  const cookie = request.headers.get("Cookie") || "";
-  const match = cookie.match(/(?:^|;\s*)edgeai_session=([A-Za-z0-9_-]{43})(?:;|$)/);
-  if (!match)
-    return null;
-  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(match[1]));
-  const tokenHash = Array.from(new Uint8Array(digest), x => x.toString(16).padStart(2, "0")).join("");
-  return await env.DB.prepare(`
-    SELECT u.id, u.full_name
+  const cookies=sessionCookies(request);
+  if(!cookies.session||!cookies.firebase)return null;
+  const tokenHash=await sessionHash(cookies.session,cookies.firebase,digestKey);
+  const user=await env.DB.prepare(`
+    SELECT u.id, u.full_name, fs.firebase_uid, fo.created_at_ms
     FROM user_sessions s JOIN users u ON u.id = s.user_id
     JOIN edgeai_firebase_sessions fs ON fs.session_id = s.id
     JOIN edgeai_firebase_identities fi ON fi.firebase_project = fs.firebase_project
       AND fi.firebase_uid = fs.firebase_uid AND fi.user_id = u.id AND fi.revoked_at IS NULL
+    JOIN edgeai_firebase_account_origins fo ON fo.firebase_project=fi.firebase_project AND fo.firebase_uid=fi.firebase_uid
     WHERE s.token_hash = ?1 AND s.revoked_at IS NULL
       AND datetime(s.expires_at) > datetime('now') AND u.is_active = 1
       AND NOT EXISTS(SELECT 1 FROM edgeai_email_approvals a WHERE a.user_id=u.id AND a.revoked_at IS NOT NULL)
     LIMIT 1
   `).bind(tokenHash).first();
+  if(!user)return null;
+  let claims;
+  try{claims=await verifyFirebaseIdToken(cookies.firebase);}catch{return null;}
+  if(claims.sub!==user.firebase_uid)return null;
+  const live=await lookupFirebaseAccount(cookies.firebase,claims);
+  if(!live||live.createdAt!==user.created_at_ms){
+    await env.DB.prepare('UPDATE user_sessions SET revoked_at=?1 WHERE token_hash=?2 AND revoked_at IS NULL')
+      .bind(new Date().toISOString(),tokenHash).run();
+    return null;
+  }
+  return {id:user.id,full_name:user.full_name};
 }
 /** Obtém identidade exclusivamente da sessão de backend verificada, não de dados enviados pelo navegador. */
 async function requestIdentity(request, env) {
@@ -1687,6 +1713,9 @@ ${conversationId}
   if (!result || typeof result.message !== "string") {
     return jsonResponse(request, { error: "Resposta estruturada inválida." }, 502);
   }
+  // A long model call must not return private output after Firebase revoked the session.
+  requestAuthentication.delete(request);
+  if(!await getAuthenticatedUser(request,env))return jsonResponse(request,{error:'Sessão revogada durante a consulta.'},401);
   try {
     await saveMessage(env, conversationId, "assistant", result.message);
     await upsertConversation(env, conversationId, userName);
@@ -1824,11 +1853,9 @@ export default {
         if (!env.DB) {
           return jsonResponse(request, { error: "Banco indisponível." }, 503);
         }
-        const cookieHeader = request.headers.get("Cookie") || "";
-        const match = cookieHeader.match(/(?:^|;\s*)edgeai_session=([A-Za-z0-9_-]{43})(?:;|$)/);
-        if (match) {
-          const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(match[1]));
-          const tokenHash = Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, "0")).join("");
+        const cookies=sessionCookies(request);
+        if (cookies.session) {
+          const tokenHash=await sessionHash(cookies.session,cookies.firebase,digestKey);
           await env.DB.prepare(`
             UPDATE user_sessions
             SET revoked_at = ?1
@@ -1837,6 +1864,7 @@ export default {
         }
         const response = jsonResponse(request, { authenticated: false, message: "Sessão encerrada." });
         response.headers.set("Set-Cookie", "edgeai_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0");
+        response.headers.append('Set-Cookie','__Host-edgeai_firebase=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0');
         response.headers.set("Cache-Control", "no-store");
         return response;
       }
@@ -1875,6 +1903,7 @@ export default {
       return jsonResponse(request, { error: "Endpoint não encontrado." }, 404);
     }
     catch (error) {
+      if(error instanceof FirebaseStatusUnavailable)return jsonResponse(request,{error:'Validação Firebase temporariamente indisponível. Acesso bloqueado; tente novamente.',code:'firebase_status_unavailable'},503);
       console.error("EDGEAI_REQUEST_FAILED");
       return jsonResponse(request, {
         error: "Erro interno no backend.",

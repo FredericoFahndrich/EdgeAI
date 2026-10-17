@@ -9,7 +9,7 @@ Firebase Google/password users with a signed `edgeai-auth` token, supported prov
 - New users, UID bindings and email reservations commit in one D1 batch. Unique constraints and SQL predicates enforce concurrency. `normalized_name` uses a generated user ID, while display names can repeat. Password hashes contain a disabled Firebase-only sentinel; legacy password login remains disabled.
 - The first verified login of an old manually bound identity reserves its email. Automatic creation fails closed until all old UID bindings have email reservations. This prevents a new UID from reserving the administrator's email during the cutover. After the migration, sign in as the existing administrator before testing a newcomer.
 - Suspension/revocation is checked on requests through active users, session and identity bindings. Revoked records and email reservations remain as tombstones. Automatic email changes/relinking are denied and need an explicit reviewed recovery process.
-- Firebase JWT signature verification does not independently perform a Firebase Admin `checkRevoked` lookup. D1 suspension/revocation takes effect immediately; an external Firebase-only revocation can remain usable until the issued token/session expires (at most its signed expiry). No service-account credentials were added.
+- Every protected request now checks Firebase account state through `accounts:lookup`, in addition to JWT signature and D1 checks. Disabled/deleted accounts and `auth_time` older than `validSince` are denied immediately on the next request, without waiting for token expiry. Provider outages fail closed. See [live revocation](firebase-live-revocation.md).
 
 ## Membership management
 

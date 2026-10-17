@@ -3476,6 +3476,23 @@ async function edgeaiFetch(url, options) {
   }
   return response;
 }
+let sessionMonitorPending=false;
+async function monitorBackendSession(){
+  if(!authUser||sessionMonitorPending)return;
+  sessionMonitorPending=true;
+  const generation=authGeneration,expectedUser=authUser.id;
+  try{
+    const response=await fetch(BACKEND_URL+'/auth/session',{credentials:'include',cache:'no-store'});
+    const data=await response.json();
+    if(generation!==authGeneration)return;
+    if(!response.ok||!data.authenticated||data.user?.id!==expectedUser)throw new Error('session_unavailable');
+  }catch{
+    if(generation===authGeneration){
+      ++authGeneration;lockChat();
+      document.getElementById('edgeaiLoginStatus').textContent='A sessão foi revogada ou não pôde ser validada. Saia e entre novamente.';
+    }
+  }finally{sessionMonitorPending=false;}
+}
 async function syncFirebaseUser(user) {
   const refreshCurrentAccount = Boolean(user?.uid && user.uid === backendFirebaseUid && authUser);
   const generation = ++authGeneration;
@@ -3721,6 +3738,8 @@ function setupEdgeaiLoginForm() {
         void auth.currentUser.getIdToken(true).catch(()=>lockChat());
       }
     },60000);
+    setInterval(()=>{void monitorBackendSession();},15000);
+    window.addEventListener?.('focus',()=>{void monitorBackendSession();});
     await applyPersistence();
   };
   window.edgeaiFirebaseLoginUnavailable = () => {
