@@ -1524,6 +1524,7 @@
         <select id="workspaceSelect" class="workspace-select" onchange="switchWorkspace(this.value)" aria-label="Selecionar espaço de trabalho">
           <option value="public">Chat público</option>
         </select>
+        <button id="projectMembersBtn" class="mini-btn" type="button" onclick="openProjectMembers()" hidden>Gerenciar membros</button>
         <button class="workspace-new" type="button" onclick="newChat();toggleMobileSidebar(false)">＋ Nova conversa</button>
         <div class="list-heading">
           <strong>CONVERSAS RECENTES</strong>
@@ -1533,7 +1534,7 @@
         <div id="conversationList" class="conversation-list"><span class="info">Entre para consultar seu histórico privado.</span></div>
       </section>
       <section class="panel-block" id="projectFilesPanel" hidden>
-        <span class="label">Arquivos do projeto</span>
+        <span class="label" id="filesScopeLabel">Arquivos pessoais</span>
         <input id="projectUploadFiles" class="file-input" type="file" multiple accept=".pdf,.txt,.md,.csv,.json,.png,.jpg,.jpeg,.docx,.xlsx" aria-label="Escolher arquivos do projeto">
         <div class="project-file-actions">
           <button type="button" class="mini-btn" id="projectUploadBtn" onclick="uploadProjectDocuments()">Enviar arquivos</button>
@@ -2248,7 +2249,7 @@ function workspaceRoute() {
 function updateAuthControls() {
   const status = document.getElementById("authStatus");
   status.textContent = authUser
-    ? "Autenticado: " + authUser.full_name
+    ? "Autenticado: " + authUser.full_name + " · Meu ID: " + authUser.id
     : (isWorkerOrigin ? "Visitante não autenticado" : "Para projetos privados, abra o site pela rota /app do Worker.");
   document.getElementById("loginBtn").hidden = Boolean(authUser);
   document.getElementById("logoutBtn").hidden = !authUser;
@@ -2364,6 +2365,7 @@ async function switchWorkspace(value) {
   if (value !== "public" && !authUser) return;
   if (value.startsWith("project:") && !availableProjects.some(p => p.id === value.slice(8))) return;
   currentScope = value;
+  document.getElementById("projectMembersBtn").hidden = !value.startsWith("project:") || !(authUser?.is_admin || availableProjects.some(p=>p.id===value.slice(8) && p.role==="owner"));
   contentEpoch++;
   document.getElementById("pdfFiles").value="";
   document.getElementById("showArchived").checked=false;
@@ -2506,13 +2508,14 @@ async function deleteConversation(item) {
 function projectFilesBase() {
   return authUser && currentScope.startsWith("project:")
     ? BACKEND_URL + "/projects/" + encodeURIComponent(currentScope.slice(8)) + "/files"
-    : null;
+    : (authUser && currentScope === "personal" ? BACKEND_URL + "/me/files" : null);
 }
 
 async function reloadProjectDocuments() {
   const panel = document.getElementById("projectFilesPanel");
   const base = projectFilesBase();
   panel.hidden = !base;
+  document.getElementById("filesScopeLabel").textContent = currentScope === "personal" ? "Meus arquivos" : "Arquivos do projeto";
   const list = document.getElementById("projectFilesList");
   if (!base) { list.textContent = "Nenhum projeto selecionado."; return; }
   list.textContent = "Carregando arquivos...";
@@ -3321,6 +3324,22 @@ INICIALIZAÇÃO
 */
 
 
+async function openProjectMembers() {
+  if(!authUser || !currentScope.startsWith('project:'))return;
+  const generation=authGeneration,scope=currentScope,base=BACKEND_URL+'/projects/'+encodeURIComponent(scope.slice(8))+'/members';
+  try {
+    const data=await apiJson(base);
+    if(generation!==authGeneration || scope!==currentScope)return;
+    const members=data.members.map(m=>m.full_name+' · '+m.id+' · '+m.role).join('\n');
+    const values=await askFields('Membros do projeto\n'+members,[{label:'ID do usuário (visível em Conta e acesso)',value:'',max:104},{label:'Papel: editor'+(authUser.is_admin?', owner':'')+' ou remover',value:'editor',max:10}]);
+    if(!values || generation!==authGeneration || scope!==currentScope)return;
+    const role=values[1].trim()==='remover'?null:values[1].trim();
+    if(!await askConfirmation('Alterar acesso de '+values[0]+' neste projeto?'))return;
+    if(generation!==authGeneration || scope!==currentScope)return;
+    await apiJson(base,{method:'PATCH',body:JSON.stringify({user_id:values[0].trim(),role})});
+    showNotice('Acesso atualizado.');
+  }catch(error){if(generation===authGeneration)showNotice(error.message);}
+}
 function adminMessage(text) {document.getElementById('adminStatus').textContent=text;}
 function clearAdminPanel() {
   const dialog=document.getElementById('adminDialog');
@@ -3389,7 +3408,7 @@ async function refreshAdminSettings() {
       }
       list.append(row);
     }
-    adminMessage('Aprovar e-mail permite entrar. O acesso a cada projeto é definido abaixo. Nenhum e-mail de convite é enviado.');
+    adminMessage('Novos usuários entram com e-mail verificado, sem projetos. Aprovações vinculam membros antigos; o acesso aos projetos é definido abaixo.');
   } catch(error) {if(generation===authGeneration)adminMessage(error.message);}
 }
 document.getElementById('adminExisting').addEventListener('change',event=>{
@@ -3564,7 +3583,7 @@ function setupEdgeaiLoginForm() {
     if (busy) return;
     message(signedIn
       ? "Conta Firebase conectada. Use Reconectar para validar o acesso ou Sair para trocar de conta."
-      : ready ? "Entre com sua conta. Novos cadastros precisam de aprovação administrativa para acessar os dados."
+      : ready ? "Entre com sua conta. Contas com e-mail verificado entram automaticamente em seu espaço pessoal."
       : "Carregando autenticação...");
   }
   function authError(error) {
